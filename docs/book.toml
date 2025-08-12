@@ -2,10 +2,18 @@
 title = "IaC‑Driven Automation Handbook"
 authors = ["Tony Thanh"]
 language = "en"
-multilingual = false
 src = "."
-
 description = "A practical guide to designing and operating IaC‑driven automation for VMware vSphere: architecture, Terraform/Ansible modules, and end‑to‑end workflows."
 
 [build]
 build-dir = "book"
+create-missing = false
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/mercurybridge/iac-vsphere"
+git-repository-icon = "fa-github"
+copy-font = true
+footer = "© 2025 Tony Thanh"
+direction = "ltr"
