@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - "docs/**"
-      - "book.toml"
 
 permissions:
   contents: read
@@ -21,7 +20,7 @@ jobs:
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Install mdBook
         run: |
