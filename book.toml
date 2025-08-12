@@ -1,0 +1,11 @@
+[book]
+title = "IaC‑Driven Automation Handbook"
+authors = ["Tony Thanh"]
+language = "en"
+multilingual = false
+src = "."
+
+description = "A practical guide to designing and operating IaC‑driven automation for VMware vSphere: architecture, Terraform/Ansible modules, and end‑to‑end workflows."
+
+[build]
+build-dir = "book"
