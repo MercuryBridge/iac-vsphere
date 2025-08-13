@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: [self-hosted]
     container:
-      image: ubuntu:latest
+      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
@@ -51,7 +51,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
     container:
-      image: ubuntu:latest
+      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
     needs: build
     steps:
       - name: Deploy to GitHub Pages
