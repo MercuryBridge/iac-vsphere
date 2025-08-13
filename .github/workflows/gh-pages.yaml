@@ -16,7 +16,9 @@ permissions:
 jobs:
 
   build:
-    runs-on: self-hosted
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:latest
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
@@ -45,7 +47,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: self-hosted
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:latest
     needs: build
     steps:
       - name: Deploy to GitHub Pages
