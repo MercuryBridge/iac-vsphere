@@ -18,21 +18,23 @@ jobs:
   build:
     runs-on: [self-hosted]
     container:
-      image: rust:1-bookworm
+      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install mdBook via cargo
-        run: |
-          cargo install --locked --version "$MDBOOK_VERSION" mdbook
-          echo "/usr/local/cargo/bin" >> "$GITHUB_PATH"
-          mdbook --version
-
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
+
+      - name: Install latest mdbook
+        run: |
+          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
+          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
+          mkdir bin
+          curl -sSL $url | tar -xz --directory=bin
+          echo "$(pwd)/bin" >> $GITHUB_PATH
 
       - name: Build doc with mdBook
         working-directory: docs
@@ -49,7 +51,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
     container:
-      image: rust:1-bookworm
+      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
     needs: build
     steps:
       - name: Deploy to GitHub Pages
