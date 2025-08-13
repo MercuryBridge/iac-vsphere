@@ -13,16 +13,12 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
 
   build:
     runs-on: [self-hosted]
     container:
-      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
+      image: ubuntu:24:04
     steps:
       - uses: actions/checkout@v5
 
@@ -53,7 +49,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
     container:
-      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
+      image: ubuntu:24:04
     needs: build
     steps:
       - name: Deploy to GitHub Pages
