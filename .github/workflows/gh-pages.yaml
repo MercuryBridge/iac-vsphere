@@ -18,24 +18,23 @@ jobs:
   build:
     runs-on: [self-hosted]
     container:
-      image: ubuntu:24.04
+      image: ghcr.io/catthehacker/ubuntu:full-latest
+    env:
+      MDBOOK_VERSION: 0.4.36
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install latest mdbook
+      - name: Install mdBook
         run: |
-          tag=$(curl -sSL 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-musl.tar.gz"
-          mkdir -p bin
-          curl -sSL "$url" | tar -xz --directory=bin
-          echo "$(pwd)/bin" >> $GITHUB_PATH
-      
+          curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
+          rustup update
+          cargo install --version ${MDBOOK_VERSION} mdbook
+
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
 
       - name: Build doc with mdBook
-        working-directory: docs
         run: mdbook build
 
       - name: Upload artifact
@@ -49,7 +48,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
     container: 
-      image: ubuntu:24.04
+      image: ghcr.io/catthehacker/ubuntu:full-latest
     needs: build
     steps:
       - name: Deploy to GitHub Pages
