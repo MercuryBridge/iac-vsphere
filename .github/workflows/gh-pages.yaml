@@ -19,10 +19,8 @@ jobs:
     runs-on: [self-hosted]
     container:
       image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
-    env:
-      MDBOOK_VERSION: 0.4.52
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install latest mdbook
         run: |
@@ -38,7 +36,7 @@ jobs:
 
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
