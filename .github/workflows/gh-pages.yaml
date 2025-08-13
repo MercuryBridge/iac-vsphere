@@ -30,13 +30,13 @@ jobs:
           echo "/usr/local/cargo/bin" >> "$GITHUB_PATH"
           mdbook --version
 
-      - name: Build doc with mdBook
-        working-directory: docs
-        run: mdbook build
-
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
+
+      - name: Build doc with mdBook
+        working-directory: docs
+        run: mdbook build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
