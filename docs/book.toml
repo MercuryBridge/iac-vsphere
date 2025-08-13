@@ -10,10 +10,8 @@ build-dir = "book"
 create-missing = false
 
 [output.html]
-default-theme = "coal"
-preferred-dark-theme = "coal"
+default-theme = "rust"
+preferred-dark-theme = "rust"
 git-repository-url = "https://github.com/mercurybridge/iac-vsphere"
 git-repository-icon = "fa-github"
 copy-font = true
-footer = "© 2025 Tony Thanh"
-direction = "ltr"
