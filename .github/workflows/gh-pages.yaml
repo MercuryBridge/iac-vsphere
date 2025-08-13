@@ -2,11 +2,11 @@ name: Deploy gh-pages
 
 on:
   workflow_dispatch:
-  push:
-    branches: 
-      - main
-    paths:
-      - "docs/**"
+  # push:
+  #   branches: 
+  #     - main
+  #   paths:
+  #     - "docs/**"
 
 permissions:
   contents: read
