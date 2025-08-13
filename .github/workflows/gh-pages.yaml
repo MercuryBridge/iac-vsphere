@@ -29,8 +29,8 @@ jobs:
           cargo install --locked --version "$MDBOOK_VERSION" mdbook
           echo "/usr/local/cargo/bin" >> "$GITHUB_PATH"
           mdbook --version
-          
-      - name: Build with mdBook
+
+      - name: Build doc with mdBook
         working-directory: docs
         run: mdbook build
 
