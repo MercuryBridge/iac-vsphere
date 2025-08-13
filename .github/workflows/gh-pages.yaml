@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: [self-hosted]
     container:
-      image: ubuntu:24:04
+      image: ubuntu:24.04
     steps:
       - uses: actions/checkout@v5
 
@@ -48,8 +48,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
-    container:
-      image: ubuntu:24:04
+    container: 
+      image: ubuntu:24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages
