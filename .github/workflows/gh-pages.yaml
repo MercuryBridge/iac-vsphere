@@ -22,11 +22,7 @@ jobs:
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
+      - uses: actions/checkout@v4
 
       - name: Install latest mdbook
         run: |
@@ -39,6 +35,10 @@ jobs:
       - name: Build doc with mdBook
         working-directory: docs
         run: mdbook build
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
