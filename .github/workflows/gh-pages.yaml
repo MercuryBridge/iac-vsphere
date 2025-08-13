@@ -1,4 +1,4 @@
-name: Deploy gh-pages
+name: Publish Documentation Portal
 
 on:
   workflow_dispatch:
@@ -18,20 +18,18 @@ jobs:
   build:
     runs-on: [self-hosted]
     container:
-      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
+      image: rust:1-bookworm
     env:
       MDBOOK_VERSION: 0.4.52
     steps:
       - uses: actions/checkout@v5
-      
-      - name: Install latest mdbook
+
+      - name: Install mdBook via cargo
         run: |
-          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir mdbook
-          curl -sSL $url | tar -xz --directory=./mdbook
-          echo `pwd`/mdbook >> $GITHUB_PATH
-      
+          cargo install --locked --version "$MDBOOK_VERSION" mdbook
+          echo "/usr/local/cargo/bin" >> "$GITHUB_PATH"
+          mdbook --version
+          
       - name: Build with mdBook
         working-directory: docs
         run: mdbook build
@@ -51,7 +49,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: [self-hosted]
     container:
-      image: ghcr.io/duongvanthanh1992/demo-vm-template:sat-sg1-latest
+      image: rust:1-bookworm
     needs: build
     steps:
       - name: Deploy to GitHub Pages
