@@ -1,4 +1,4 @@
-name: Publish Documentation Portal
+name: Build and Publish Documents
 
 on:
   workflow_dispatch:

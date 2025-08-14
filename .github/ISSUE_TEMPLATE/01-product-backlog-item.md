@@ -2,7 +2,7 @@
 name: 01 Product Backlog Item
 about: Product backlog item
 title: "<Deliverable name>"
-labels: PBI
+type: PBI
 assignees: ''
 ---
 
