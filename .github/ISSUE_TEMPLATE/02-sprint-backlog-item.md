@@ -2,7 +2,7 @@
 name: 02 Sprint Backlog Item
 about: Sprint backlog item
 title: "<Short description of task>"
-labels: SBI
+type: SBI
 assignees: ''
 
 ---
