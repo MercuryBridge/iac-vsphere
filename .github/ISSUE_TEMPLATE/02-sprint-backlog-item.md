@@ -4,7 +4,7 @@ about: Sprint backlog item
 title: "<Short description of task>"
 type: SBI
 assignees: ''
-
+projects: 4
 ---
 
 ### Steps
