@@ -4,7 +4,7 @@ about: Sprint backlog item
 title: "<Short description of task>"
 type: SBI
 assignees: ''
-project: 4
+project: "Project IaC-Driven Automation"
 ---
 
 ### Steps
