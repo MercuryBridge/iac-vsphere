@@ -1,0 +1,138 @@
+name: Ansible Pipeline for Decom VM
+run-name: >
+  VM information : ${{ inputs.vm_name }} - ${{ inputs.vm_ipv4 }} - 
+  Site : ${{ inputs.build_site }} - 
+    Branch : ${{ github.ref_name }}
+
+on: 
+  workflow_dispatch:
+    inputs:
+
+      build_site:
+        type: choice
+        description: "Environments for deployment. Used for Github Action.(e.g. SAT, PRD...)"
+        required: true
+        default: "sat-sg1n"
+        options:
+          - "sat-sg1n"
+          - "prd-sg1n"
+
+      change_request_number: 
+        description: "Enter the ServiceNow Change Request number (e.g., CHG0031265)"
+        required: true
+        default: "CHG0031265"
+
+      vm_name: 
+        description: "Enter the VM Name."
+        required: true
+        default: ""
+
+      vm_ipv4:
+        description: "Enter the VM IPv4."
+        required: true
+        default: ""
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  ANSIBLE_COLLECTIONS_PATHS: /root/.ansible/collections:/usr/share/ansible/collections
+
+jobs:
+  pre:
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+    outputs:
+      ansible_image: ${{ env.PACKAGES_CONTAINER }}
+      ansible_runner: ${{ env.RUNNER_TAG }}
+
+  validate-vm-information:
+    needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}-validation"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      # DEBUG
+      - name: Print env
+        run: |
+          printenv
+
+      # DEBUG
+      - name: Print ansible version
+        run: |
+          ansible-playbook --version
+          ansible-galaxy role list || true
+          ansible-galaxy collection list || true
+
+      - name: Run Ansible
+        id: ansible
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts
+          -e "vsphere_endpoint=${{ secrets.VSPHERE_ENDPOINT }}"
+          -e "vsphere_username=${{ secrets.VSPHERE_USERNAME }}"
+          -e "vsphere_password=${{ secrets.VSPHERE_PASSWORD }}"
+          -e "vm_name=${{ inputs.vm_name }}"
+          -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
+          vcenter-decom-vm.yaml
+
+  ansible-decom-vm:
+    needs: [pre, validate-vm-information]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}-approved"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Run Ansible
+        id: ansible
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts
+          -e "vsphere_endpoint=${{ secrets.VSPHERE_ENDPOINT }}"
+          -e "vsphere_username=${{ secrets.VSPHERE_USERNAME }}"
+          -e "vsphere_password=${{ secrets.VSPHERE_PASSWORD }}"
+          -e "vm_name=${{ inputs.vm_name }}"
+          -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
+          -e "workflow_initiator=${{ github.actor }}"
+          -e "disable_vm_network_card=true"
+          vcenter-decom-vm.yaml
