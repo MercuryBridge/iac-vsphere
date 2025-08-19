@@ -1,0 +1,9 @@
+
+
+[vm-db]
+tony-vm-db-01 vm_deploy_ip=172.16.14.7
+tony-vm-db-02 vm_deploy_ip=172.16.14.79
+
+[vm-non-db]
+tony-vm-non-db-01 vm_deploy_ip=172.16.14.77
+tony-vm-non-db-02 vm_deploy_ip=172.16.14.78
