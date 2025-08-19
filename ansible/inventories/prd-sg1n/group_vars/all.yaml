@@ -2,8 +2,15 @@
 
 vsphere_validate: false
 enable_root_login: true
-vsphere_datacenter: "{{ lookup('env', 'VSPHERE_DATACENTER') }}"
-vsphere_cluster: "{{ lookup('env', 'VSPHERE_CLUSTER') }}"
 vsphere_resource_pool: "{{ lookup('env', 'VSPHERE_RESOURCE_POOL') }}"
 vsphere_folder: "{{ lookup('env', 'VSPHERE_FOLDER') }}"
 vsphere_datastore: "{{ lookup('env', 'VSPHERE_DATASTORE') }}"
+
+
+
+hv: "community.hashi_vault.hashi_vault"
+hv_query_base: >-
+  secret=kv/vcenter/
+
+ansible_user: "{{ lookup(hv, hv_query_base+'LINUX_USER')}}"
+ansible_password: "{{ lookup(hv, hv_query_base+'LINUX_PASS')}}"
