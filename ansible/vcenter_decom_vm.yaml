@@ -1,0 +1,14 @@
+---
+
+- hosts: localhost
+  gather_facts: true
+  tasks:
+    - name: Include role to validate decommission VM
+      include_role:
+        name: vm_decom_validate
+      when: decom_run_phase == "validate"
+
+    - name: Include role to execute decommission VM
+      include_role:
+        name: vm_decom_execute
+      when: decom_run_phase == "execute"

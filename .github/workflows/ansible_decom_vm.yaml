@@ -103,11 +103,12 @@ jobs:
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
+          -e "decom_run_phase=validate"
           -e "decom_action=${{ inputs.decom_action }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
           -e "vm_name=${{ inputs.vm_name }}"
           -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
-          vcenter-decom-vm.yaml
+          vcenter_decom_vm.yaml
 
   ansible-decom-vm:
     needs: [pre, validate-vm-information]
@@ -138,9 +139,10 @@ jobs:
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
+          -e "decom_run_phase=execute"
           -e "decom_action=${{ inputs.decom_action }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
           -e "vm_name=${{ inputs.vm_name }}"
           -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
           -e "workflow_initiator=${{ github.actor }}"
-          vcenter-decom-vm.yaml
+          vcenter_decom_vm.yaml
