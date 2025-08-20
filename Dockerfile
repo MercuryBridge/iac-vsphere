@@ -1,10 +1,9 @@
 FROM ubuntu:24.04
-WORKDIR /tmp/build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates curl software-properties-common; \
+    apt-get install -y apt-transport-https ca-certificates curl wget software-properties-common; \
     install -m 0755 -d /etc/apt/keyrings; \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc; \
     chmod a+r /etc/apt/keyrings/docker.asc; \
@@ -21,9 +20,9 @@ RUN apt-get update && \
     apt-get clean all
 
 COPY requirements/requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt && \
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt && \
     rm -fr /root/.cache/pip/
 
 COPY requirements/requirements.yaml .
-RUN ansible-galaxy collection install -v -r requirements.yaml && \
+RUN ansible-galaxy collection install -v -r requirements.yml && \
     ansible-galaxy role install -v -r requirements.yaml --ignore-errors
