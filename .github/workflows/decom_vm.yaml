@@ -2,9 +2,9 @@ name: Ansible Pipeline for Decom VM
 run-name: >
   VM information : ${{ inputs.vm_name }} - ${{ inputs.vm_ipv4 }} - 
   Site : ${{ inputs.build_site }} - 
-    Branch : ${{ github.ref_name }}
+  Branch : ${{ github.ref_name }}
 
-on: 
+on:
   workflow_dispatch:
     inputs:
 
@@ -16,6 +16,16 @@ on:
         options:
           - "sat-sg1n"
           - "prd-sg1n"
+
+      decom_action:
+        type: choice
+        description: "Select the decommission action: disconnect network, power off, or delete VM"
+        required: true
+        default: "disconnect_network"
+        options:
+          - "disconnect_network"
+          - "power_off_vm"
+          - "delete_vm"
 
       change_request_number: 
         description: "Enter the ServiceNow Change Request number (e.g., CHG0031265)"
@@ -52,7 +62,7 @@ jobs:
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
     outputs:
-      ansible_image: ${{ env.PACKAGES_CONTAINER }}
+      ansible_image: ${{ env.RUNNER_IMAGE }}
       ansible_runner: ${{ env.RUNNER_TAG }}
 
   validate-vm-information:
@@ -87,18 +97,16 @@ jobs:
           ansible-galaxy role list || true
           ansible-galaxy collection list || true
 
-      - name: Run Ansible
-        id: ansible
+      - name: Ansible check
+        id: ansible_check
         working-directory: ansible/
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
-          -e "vsphere_endpoint=${{ secrets.VSPHERE_ENDPOINT }}"
-          -e "vsphere_username=${{ secrets.VSPHERE_USERNAME }}"
-          -e "vsphere_password=${{ secrets.VSPHERE_PASSWORD }}"
+          -e "decom_action=${{ inputs.decom_action }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
           -e "vm_name=${{ inputs.vm_name }}"
           -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
-          -e "change_request_number=${{ inputs.change_request_number }}"
           vcenter-decom-vm.yaml
 
   ansible-decom-vm:
@@ -121,18 +129,18 @@ jobs:
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
 
-      - name: Run Ansible
-        id: ansible
+      - name: Ansible run
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+        id: ansible_run
         working-directory: ansible/
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
-          -e "vsphere_endpoint=${{ secrets.VSPHERE_ENDPOINT }}"
-          -e "vsphere_username=${{ secrets.VSPHERE_USERNAME }}"
-          -e "vsphere_password=${{ secrets.VSPHERE_PASSWORD }}"
+          -e "decom_action=${{ inputs.decom_action }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
           -e "vm_name=${{ inputs.vm_name }}"
           -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
-          -e "change_request_number=${{ inputs.change_request_number }}"
           -e "workflow_initiator=${{ github.actor }}"
-          -e "disable_vm_network_card=true"
           vcenter-decom-vm.yaml
