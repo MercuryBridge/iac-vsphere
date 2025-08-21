@@ -73,6 +73,7 @@ jobs:
           image: "${{ needs.pre.outputs.ansible_image }}"
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/github/workspace/ansible/private_ssh_key:ro
           credentials:
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
@@ -118,6 +119,7 @@ jobs:
           image: "${{ needs.pre.outputs.ansible_image }}"
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/github/workspace/ansible/private_ssh_key:ro
           credentials:
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}

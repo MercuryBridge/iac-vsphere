@@ -1,14 +1,28 @@
 ---
 
-- hosts: localhost
+- hosts: test-host
   gather_facts: true
   tasks:
     - name: Include role to validate decommission VM
-      include_role:
-        name: vm_decom_validate
+      ansible.builtin.ping:
+      ignore_unreachable: true
+      when: decom_run_phase == "validate"
+      # include_role:
+      #   name: vm_decom_validate
+      # when: decom_run_phase == "validate"
+
+    - name: Checkout validate
+      ansible.builtin.shell: echo "validate" >> validate.txt
       when: decom_run_phase == "validate"
 
     - name: Include role to execute decommission VM
-      include_role:
-        name: vm_decom_execute
+      ansible.builtin.ping:
+      ignore_unreachable: true
+      when: decom_run_phase == "execute"
+      # include_role:
+      #   name: vm_decom_execute
+      # when: decom_run_phase == "execute"
+
+    - name: Checkout execute
+      ansible.builtin.shell: echo "execute" >> execute.txt
       when: decom_run_phase == "execute"
