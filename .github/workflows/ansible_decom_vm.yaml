@@ -55,7 +55,7 @@ jobs:
     container:
       image: ubuntu:20.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Load env from default location
         run: >-
@@ -79,7 +79,7 @@ jobs:
             password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Load env from default location
         run: >-
@@ -125,7 +125,7 @@ jobs:
             password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Load env from default location
         run: >-
