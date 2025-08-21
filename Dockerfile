@@ -24,5 +24,5 @@ RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt && \
     rm -fr /root/.cache/pip/
 
 COPY requirements/requirements.yaml .
-RUN ansible-galaxy collection install -v -r requirements.yml && \
+RUN ansible-galaxy collection install -v -r requirements.yaml && \
     ansible-galaxy role install -v -r requirements.yaml --ignore-errors
