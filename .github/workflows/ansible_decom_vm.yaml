@@ -49,13 +49,6 @@ permissions:
 env:
   ANSIBLE_COLLECTIONS_PATHS: /root/.ansible/collections:/usr/share/ansible/collections
 
-permissions:
-  contents: read
-  packages: read
-
-env:
-  ANSIBLE_COLLECTIONS_PATHS: /root/.ansible/collections:/usr/share/ansible/collections
-
 jobs:
   pre:
     runs-on: [self-hosted]
