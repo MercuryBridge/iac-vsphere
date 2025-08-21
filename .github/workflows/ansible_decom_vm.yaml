@@ -67,7 +67,7 @@ jobs:
 
   validate-vm-information:
     needs: [pre]
-    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    runs-on: [self-hosted]
     environment: "${{ inputs.build_site }}-validation"
     container:
           image: "${{ needs.pre.outputs.ansible_image }}"
