@@ -61,9 +61,10 @@ jobs:
         run: >-
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
+
     outputs:
-      ansible_image: ${{ env.PACKAGES_CONTAINER }}
-      ansible_runner: ${{ env.RUNNER_TAG }}
+      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
+      ansible_image: ${{ env.ANSIBLE_IMAGE }}
 
   validate-vm-information:
     needs: [pre]
