@@ -125,7 +125,7 @@ jobs:
           
 
   apply:
-    needs: [pre, validate-information]
+    needs: [pre, validate]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-approved"
     container:
