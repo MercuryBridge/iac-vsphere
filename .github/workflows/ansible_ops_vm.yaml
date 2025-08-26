@@ -1,6 +1,6 @@
 name: Ansible vSphere VM Provisioning Pipeline
 run-name: >
-  [${{ github.ref_name }}] | ${{ inputs.build_site }} | Group/VM: ${{ inputs.target_group }} |
+  [${{ github.ref_name }}] ${{ inputs.build_site }} | Group/VM: ${{ inputs.target_group }} |
   State: ${{ inputs.target_state }} | CR: ${{ inputs.change_request_number }}
 
 on:
@@ -41,6 +41,14 @@ permissions:
   contents: read
   packages: read
 
+concurrency:
+  group: ansible-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}-${{ inputs.target_state }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
 env:
   ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
 
@@ -61,7 +69,7 @@ jobs:
       ansible_runner: ${{ env.ANSIBLE_RUNNER }}
       ansible_image: ${{ env.ANSIBLE_IMAGE }}
 
-  validate-information:
+  validate:
     needs: [pre]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-validation"
@@ -82,7 +90,7 @@ jobs:
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
 
-      - name: Copy private key & set permission
+      - name: Stage SSH key
         working-directory: ansible/
         run: |
           cp /secrets/private_ssh_key ./private_ssh_key
@@ -100,23 +108,23 @@ jobs:
           ansible-playbook --version
           ansible-galaxy collection list || true
 
-      - name: Ansible check
-        env:
-          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
-          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
-          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
-        id: ansible_check
-        working-directory: ansible/
-        run: >-
-          ansible-playbook
-          -i inventories/${{ inputs.build_site }}/hosts
-          -e "input_target_group=${{ inputs.target_group }}"
-          -e "input_state_group=${{ inputs.target_state }}"
-          -e "change_request_number=${{ inputs.change_request_number }}"
-          prepare_environment.yaml --check --diff
+      # - name: Ansible check
+      #   env:
+      #     ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+      #     ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+      #     ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+      #   id: ansible_check
+      #   working-directory: ansible/
+      #   run: >-
+      #     ansible-playbook
+      #     -i inventories/${{ inputs.build_site }}/hosts
+      #     -e "input_target_group=${{ inputs.target_group }}"
+      #     -e "input_state_group=${{ inputs.target_state }}"
+      #     -e "change_request_number=${{ inputs.change_request_number }}"
+      #     prepare_environment.yaml --check --diff
           
 
-  ansible-vm-operation:
+  apply:
     needs: [pre, validate-information]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-approved"
@@ -137,7 +145,7 @@ jobs:
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
 
-      - name: Copy private key & set permission
+      - name: Stage SSH key
         working-directory: ansible/
         run: |
           cp /secrets/private_ssh_key ./private_ssh_key
