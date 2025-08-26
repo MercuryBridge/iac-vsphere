@@ -1,23 +1,20 @@
-name: Ansible Pipeline for deploy or delete VM in VMware vSphere
+name: Ansible vSphere VM Provisioning Pipeline
 run-name: >
-  Branch : ${{ github.ref_name }} -
-  Site : ${{ inputs.build_site }} - 
-  Host Group/VM information : ${{ inputs.target_group }} -
-  State : ${{ inputs.target_state }} -
-  Change Request : ${{ inputs.change_request_number }}
+  [${{ github.ref_name }}] | ${{ inputs.build_site }} | Group/VM: ${{ inputs.target_group }} |
+  State: ${{ inputs.target_state }} | CR: ${{ inputs.change_request_number }}
 
 on:
   workflow_dispatch:
     inputs:
 
       change_request_number: 
-        description: "Enter the ServiceNow Change Request number (e.g., CHG0031265)"
+        description: "ServiceNow Change Request ID (e.g., CHG0031265). Mandatory for tracking."
         required: true
         default: "CHG0031265"
 
       build_site:
         type: choice
-        description: "Environments for deployment. Used for Github Action.(e.g. SAT, PRD...)"
+        description: "Deployment environment/site (e.g., SAT, PRD)."
         required: true
         default: "sat-sg1n"
         options:
@@ -25,14 +22,15 @@ on:
           - "prd-sg1n"
 
       target_group:
-        description: "Enter the target host group defined in Ansible inventory (e.g., vm_db)."
+        description: "Target host group(s) or VM(s) from Ansible inventory. 
+          Use commas for multiple groups (e.g., vm-db, vm-non-db) or multiple VMs."
         required: true
-        default: "vm_db, vm_non_db"
+        default: "vm-db, vm-non-db"
 
       target_state:
         type: choice
-        description: "Select the target state for host group or the VM defined in Ansible inventory
-          (e.g., present=deploy, absent=delete)."
+        description: "Desired state for host group/VM in Ansible inventory. 
+          'present' = deploy, 'absent' = delete."
         required: true
         default: "present"
         options:
@@ -154,9 +152,9 @@ jobs:
         working-directory: ansible/
         run: >-
           ansible-playbook
-          -i inventories/${{ inputs.build_site }}/hosts \
-          -e "input_target_group=${{ inputs.target_group }}" \
-          -e "input_state_group=${{ inputs.target_state }}" \
-          -e "change_request_number=${{ inputs.change_request_number }}" \
+          -i inventories/${{ inputs.build_site }}/hosts
+          -e "input_target_group=${{ inputs.target_group }}"
+          -e "input_state_group=${{ inputs.target_state }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
           -e "workflow_initiator=${{ github.actor }}"
           prepare_environment.yaml
