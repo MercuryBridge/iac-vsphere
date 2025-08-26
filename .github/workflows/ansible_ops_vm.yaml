@@ -1,0 +1,162 @@
+name: Ansible Pipeline for deploy or delete VM in VMware vSphere
+run-name: >
+  Branch : ${{ github.ref_name }} -
+  Site : ${{ inputs.build_site }} - 
+  Host Group/VM information : ${{ inputs.target_group }} -
+  State : ${{ inputs.target_state }} -
+  Change Request : ${{ inputs.change_request_number }}
+
+on:
+  workflow_dispatch:
+    inputs:
+
+      change_request_number: 
+        description: "Enter the ServiceNow Change Request number (e.g., CHG0031265)"
+        required: true
+        default: "CHG0031265"
+
+      build_site:
+        type: choice
+        description: "Environments for deployment. Used for Github Action.(e.g. SAT, PRD...)"
+        required: true
+        default: "sat-sg1n"
+        options:
+          - "sat-sg1n"
+          - "prd-sg1n"
+
+      target_group:
+        description: "Enter the target host group defined in Ansible inventory (e.g., vm_db)."
+        required: true
+        default: "vm_db, vm_non_db"
+
+      target_state:
+        type: choice
+        description: "Select the target state for host group or the VM defined in Ansible inventory
+          (e.g., present=deploy, absent=delete)."
+        required: true
+        default: "present"
+        options:
+          - "present"
+          - "absent"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
+
+jobs:
+  pre:
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+    outputs:
+      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
+      ansible_image: ${{ env.ANSIBLE_IMAGE }}
+
+  validate-information:
+    needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}-validation"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Copy private key & set permission
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+
+      # DEBUG
+      - name: Print env
+        run: |
+          printenv
+
+      # DEBUG
+      - name: Print ansible version
+        working-directory: ansible/
+        run: |
+          ansible-playbook --version
+          ansible-galaxy collection list || true
+
+      - name: Ansible check
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_check
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts \
+          -e "input_target_group=${{ inputs.target_group }}" \
+          -e "input_state_group=${{ inputs.target_state }}" \
+          -e "change_request_number=${{ inputs.change_request_number }}" \
+          prepare_environment.yaml
+          
+
+  ansible-vm-operation:
+    needs: [pre, validate-information]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}-approved"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Copy private key & set permission
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+
+      - name: Ansible run
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_run
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts \
+          -e "input_target_group=${{ inputs.target_group }}" \
+          -e "input_state_group=${{ inputs.target_state }}" \
+          -e "change_request_number=${{ inputs.change_request_number }}" \
+          -e "workflow_initiator=${{ github.actor }}"
+          prepare_environment.yaml

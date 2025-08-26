@@ -5,6 +5,3 @@ sat-sg1n-vm-db-02 vm_deploy_ip=172.16.14.76
 [vm-non-db]
 sat-sg1n-vm-non-db-01 vm_deploy_ip=172.16.14.77
 sat-sg1n-vm-non-db-02 vm_deploy_ip=172.16.14.78
-
-[test-host]
-atduong-ubuntu22-231 vm_deploy_ip=172.16.13.231

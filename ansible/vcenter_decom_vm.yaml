@@ -1,28 +1,14 @@
 ---
 
-- hosts: test-host
+- hosts: "{{ input_target_group }}"
   gather_facts: true
   tasks:
     - name: Include role to validate decommission VM
-      ansible.builtin.ping:
-      ignore_unreachable: true
-      when: decom_run_phase == "validate"
-      # include_role:
-      #   name: vm_decom_validate
-      # when: decom_run_phase == "validate"
-
-    - name: Checkout validate
-      ansible.builtin.shell: echo "validate" >> validate.txt
+      include_role:
+        name: vm_decom_validate
       when: decom_run_phase == "validate"
 
     - name: Include role to execute decommission VM
-      ansible.builtin.ping:
-      ignore_unreachable: true
-      when: decom_run_phase == "execute"
-      # include_role:
-      #   name: vm_decom_execute
-      # when: decom_run_phase == "execute"
-
-    - name: Checkout execute
-      ansible.builtin.shell: echo "execute" >> execute.txt
+      include_role:
+        name: vm_decom_execute
       when: decom_run_phase == "execute"

@@ -12,13 +12,18 @@ vsphere_password: "{{ lookup(hv, hv_query_base).VSPHERE_PASSWORD }}"
 vsphere_datacenter: "{{ lookup(hv, hv_query_base).VSPHERE_DATACENTER }}"
 vsphere_cluster: "{{ lookup(hv, hv_query_base).VSPHERE_CLUSTER }}"
 vsphere_datastore: "{{ lookup(hv, hv_query_base).VSPHERE_DATASTORE }}"
+vsphere_portgroup: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP }}"
+vsphere_portgroup_netmask: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP_NETMASK }}"
+vsphere_portgroup_gateway: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP_GATEWAY }}"
+vsphere_template: "{{ lookup(hv, hv_query_base).VSPHERE_TEMPLATE }}"
 
 vsphere_validate: false
 vsphere_folder: "tony-sat-test"
 vsphere_resource_pool: "tony-sat-test"
 
+dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
 ntp_servers: []
-dns_servers: []
 syslog_servers: []
-
 enable_root_login: true
