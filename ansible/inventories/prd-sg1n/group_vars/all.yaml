@@ -1,6 +1,6 @@
 ---
 
-hv: community.hashi_vault.hashi_vault
+hv: "community.hashi_vault.hashi_vault"
 hv_query_base: >-
   url={{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}
   token={{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}
