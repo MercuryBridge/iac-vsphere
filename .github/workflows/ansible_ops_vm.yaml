@@ -111,11 +111,11 @@ jobs:
         working-directory: ansible/
         run: >-
           ansible-playbook
-          -i inventories/${{ inputs.build_site }}/hosts \
-          -e "input_target_group=${{ inputs.target_group }}" \
-          -e "input_state_group=${{ inputs.target_state }}" \
-          -e "change_request_number=${{ inputs.change_request_number }}" \
-          prepare_environment.yaml
+          -i inventories/${{ inputs.build_site }}/hosts
+          -e "input_target_group=${{ inputs.target_group }}"
+          -e "input_state_group=${{ inputs.target_state }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
+          prepare_environment.yaml --check --diff
           
 
   ansible-vm-operation:
