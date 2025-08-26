@@ -1,0 +1,46 @@
+---
+
+- name: Gather cluster info
+  community.vmware.vmware_cluster_info:
+    hostname: "{{ esxi_vcenter_hostname }}"
+    username: "{{ esxi_vcenter_username }}"
+    password: "{{ esxi_vcenter_password }}"
+    validate_certs: "{{ esxi_vcenter_validate }}"
+    cluster_name: "{{ esxi_cluster }}"
+    datacenter: "{{ esxi_datacenter }}"
+  delegate_to: localhost
+  register: _cluster_info
+
+- name: Enable HA / Set Admission Control
+  community.vmware.vmware_cluster_ha:
+    hostname: "{{ esxi_vcenter_hostname }}"
+    username: "{{ esxi_vcenter_username }}"
+    password: "{{ esxi_vcenter_password }}"
+    validate_certs: "{{ esxi_vcenter_validate }}"
+    cluster_name: "{{ esxi_cluster }}"
+    datacenter: "{{ esxi_datacenter }}"
+    enable: "{{ esxi_enable_ha }}"
+    ha_host_monitoring: "{{ esxi_ha_host_monitoring }}"
+    ha_restart_priority: "{{ esxi_ha_restart_priority }}"
+    host_isolation_response: "{{ esxi_host_isolation_response }}"
+    ha_vm_monitoring: "{{ esxi_ha_vm_monitoring }}"
+    ha_vm_failure_interval: "{{ esxi_ha_vm_failure_interval }}"
+    ha_vm_min_up_time: "{{ esxi_ha_vm_min_up_time }}"
+    ha_vm_max_failures: "{{ esxi_ha_vm_max_failures }}"
+    ha_vm_max_failure_window: "{{ esxi_ha_vm_max_failure_window }}"
+    apd_response: "{{ esxi_apd_response }}"
+    pdl_response: "{{ esxi_pdl_response }}"
+    # Admission Control
+    reservation_based_admission_control: >-
+      {{ (esxi_admctrl_mode != 'reservation_based') |
+         ternary(omit, esxi_reservation_based_admission_control) }}
+    failover_host_admission_control: >-
+      {{ (esxi_admctrl_mode != 'failover_host') |
+         ternary(omit, {'failover_hosts': failover_hosts}) }}
+  vars:
+    failover_hosts: >-
+      {{ _cluster_info.clusters[esxi_cluster].hosts |
+         map(attribute='name') | map('extract', hostvars) |
+         selectattr('esxi_is_dfh', 'defined') | selectattr('esxi_is_dfh') |
+         map(attribute='inventory_hostname') }}
+  delegate_to: localhost

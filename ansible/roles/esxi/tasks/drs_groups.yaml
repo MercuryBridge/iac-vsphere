@@ -1,0 +1,50 @@
+---
+
+- name: Gather current DRS Group info
+  community.vmware.vmware_drs_group_info:
+    hostname: "{{ esxi_vcenter_hostname }}"
+    username: "{{ esxi_vcenter_username }}"
+    password: "{{ esxi_vcenter_password }}"
+    validate_certs: "{{ esxi_vcenter_validate }}"
+    cluster_name: "{{ esxi_cluster }}"
+  register: _drs_groups
+  delegate_to: localhost
+
+- name: Update drs_groups
+  delegate_to: localhost
+  vars:
+    host_groups: >-
+      {{ _drs_groups.drs_group_info[esxi_cluster] |
+         selectattr('type', 'eq', 'host') |
+         map(attribute='group_name') }}
+  block:
+
+    - name: Create Host Group if not exists
+      community.vmware.vmware_drs_group:
+        hostname: "{{ esxi_vcenter_hostname }}"
+        username: "{{ esxi_vcenter_username }}"
+        password: "{{ esxi_vcenter_password }}"
+        validate_certs: "{{ esxi_vcenter_validate }}"
+        cluster_name: "{{ esxi_cluster }}"
+        group_name: "{{ item.name }}"
+        hosts:
+          - "{{ inventory_hostname }}"
+      when:
+        - item.state is not defined or item.state == 'present'
+        - item.name not in host_groups
+      loop: "{{ esxi_drs_groups }}"
+
+    - name: Add/Remove Host to/from DRS Groups
+      community.vmware.vmware_drs_group_manager:
+        hostname: "{{ esxi_vcenter_hostname }}"
+        username: "{{ esxi_vcenter_username }}"
+        password: "{{ esxi_vcenter_password }}"
+        validate_certs: "{{ esxi_vcenter_validate }}"
+        cluster_name: "{{ esxi_cluster }}"
+        group_name: "{{ item.name }}"
+        hosts:
+          - "{{ inventory_hostname }}"
+        state: "{{ item.state | default(omit) }}"
+      when:
+        - item.name in host_groups
+      loop: "{{ esxi_drs_groups }}"

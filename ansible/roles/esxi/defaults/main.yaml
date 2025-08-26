@@ -1,0 +1,9 @@
+
+# other options: set default explicitly
+esxi_ha_host_monitoring: enabled
+esxi_ha_restart_priority: medium
+esxi_host_isolation_response: 'none'
+esxi_ha_vm_monitoring: vmMonitoringDisabled
+esxi_ha_vm_failure_interval: 30
+esxi_ha_vm_min_up_time: 120
+esxi_ha_vm_max_failures: 3

@@ -1,5 +1,24 @@
 ---
 
-hv: "community.hashi_vault.hashi_vault"
+hv: community.hashi_vault.hashi_vault
 hv_query_base: >-
-  secret=kv/vcenter/
+  url={{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}
+  token={{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}
+  secret={{ lookup('env', 'ANSIBLE_HASHI_VAULT_PATH_BASE') }}
+
+vsphere_endpoint: "{{ lookup(hv, hv_query_base).VSPHERE_ENDPOINT }}"
+vsphere_username: "{{ lookup(hv, hv_query_base).VSPHERE_USERNAME }}"
+vsphere_password: "{{ lookup(hv, hv_query_base).VSPHERE_PASSWORD }}"
+vsphere_datacenter: "{{ lookup(hv, hv_query_base).VSPHERE_DATACENTER }}"
+vsphere_cluster: "{{ lookup(hv, hv_query_base).VSPHERE_CLUSTER }}"
+vsphere_datastore: "{{ lookup(hv, hv_query_base).VSPHERE_DATASTORE }}"
+
+vsphere_validate: false
+vsphere_folder: "tony-sat-test"
+vsphere_resource_pool: "tony-sat-test"
+
+ntp_servers: []
+dns_servers: []
+syslog_servers: []
+
+enable_root_login: true
