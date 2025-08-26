@@ -23,9 +23,9 @@ on:
 
       target_group:
         description: "Target host group(s) or VM(s) from Ansible inventory. 
-          Use commas for multiple groups (e.g., vm-db, vm-non-db) or multiple VMs."
+          Use commas for multiple groups (e.g., vm-db,vm-non-db) or multiple VMs."
         required: true
-        default: "vm-db, vm-non-db"
+        default: "vm-db,vm-non-db"
 
       target_state:
         type: choice
