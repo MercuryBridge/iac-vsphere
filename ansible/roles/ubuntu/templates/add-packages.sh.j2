@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -x
+
+apt-get update -y
+
+apt-get install -y {{ ubuntu_list_package | join(' ') }}
