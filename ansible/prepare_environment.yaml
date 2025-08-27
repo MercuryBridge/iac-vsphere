@@ -6,3 +6,4 @@
     - name: Prepare environment
       include_role:
         name: vm_operation
+      tags: ansible_check

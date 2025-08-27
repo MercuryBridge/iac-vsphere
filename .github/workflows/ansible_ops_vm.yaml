@@ -8,7 +8,7 @@ on:
     inputs:
 
       change_request_number: 
-        description: "ServiceNow Change Request ID (e.g., CHG0031265). Mandatory for tracking."
+        description: "ServiceNow Change Request ID (e.g., CHG0000001). Mandatory for tracking."
         required: true
         default: "CHG0000001"
 
@@ -66,6 +66,7 @@ jobs:
           exit 1
 
   pre:
+    needs: [branch-check]
     runs-on: [self-hosted]
     container:
       image: ubuntu:20.04
