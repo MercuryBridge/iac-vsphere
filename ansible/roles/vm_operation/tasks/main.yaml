@@ -1,6 +1,6 @@
 ---
 
-- import_playbook: check.yaml
+- import_task: check.yaml
   tags: ansible_check
 
-- import_playbook: run.yaml
+- import_task: run.yaml
