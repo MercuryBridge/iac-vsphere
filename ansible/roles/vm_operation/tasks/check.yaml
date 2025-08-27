@@ -1,0 +1,85 @@
+---
+
+- name: HashiCorp-Vault connectivity check
+  uri:
+    url: >-
+      {{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}/v1/sys/health
+    headers:
+      X-Vault-Token: >-
+        {{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}
+    method: GET
+    timeout: 10
+  delegate_to: localhost
+  register: _vault_health
+  ignore_errors: true
+
+- name: vCenter connectivity check
+  community.vmware.vmware_about_info:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+  register: _vcenter_info
+  delegate_to: localhost
+  ignore_errors: true
+
+- name: Template existence check
+  community.vmware.vmware_guest_info:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    datacenter: "{{ vsphere_datacenter }}"
+    name: "{{ vsphere_template }}"
+  register: _template_check
+  delegate_to: localhost
+  ignore_errors: true
+
+- name: Display pre-check results
+  debug:
+    msg: |
+      ========================================
+      PRE-DEPLOYMENT VERIFICATION RESULTS
+      ========================================
+      Change Request    : {{ change_request_number }}
+      Environment       : {{ input_build_site }}
+      Initiator         : {{ workflow_initiator }}
+      Target Group/VM   : {{ input_target_group }}
+      VM Name           : {{ inventory_hostname_short }}
+      Operation         : {{ 'Deploy' if input_state_group == 'present' 
+                            else 'Delete' }}
+
+      CONNECTIVITY CHECKS:
+      ├─ Vault Status   : {{ 'PASS'
+           if _vault_health.status == 200
+           else 'FAIL - ' + (_vault_health.msg | default('Connection failed')) }}
+      ├─ vCenter Status : {{ 'PASS' if _vcenter_info.about_info is defined
+           else 'FAIL - ' + (_vcenter_info.msg | default('Connection failed')) }}
+      {% if _vcenter_info.about_info is defined %}
+      ├─ vCenter Prod   : {{ _vcenter_info.about_info.product_full_name }}
+      ├─ vCenter UUID   : {{ _vcenter_info.about_info.instance_uuid }}
+      {% else %}
+      ├─ vCenter Prod   : N/A
+      ├─ vCenter UUID   : N/A
+      {% endif %}
+
+      INFRASTRUCTURE CHECKS:
+      ├─ Datacenter     : {{ vsphere_datacenter }}
+      ├─ Cluster        : {{ vsphere_cluster }}
+      ├─ Resource Pool  : {{ vsphere_resource_pool }}
+      ├─ Folder         : {{ vsphere_folder }}
+      ├─ Datastore      : {{ vsphere_datastore }}
+      ├─ Template       : {{ vsphere_template }}
+      ├─ VM Name        : {{ inventory_hostname_short }}
+      ├─ Network        : {{ vsphere_portgroup }}
+      ├─ IP             : {{ vm_deploy_ip }}
+      ├─ Netmask        : {{ vsphere_portgroup_netmask }}
+      ├─ Gateway        : {{ vsphere_portgroup_gateway }}
+      ========================================
+
+- name: Fail if critical checks failed
+  fail:
+    msg: "Pre-checks failed. Review output above."
+  when: >-
+    (_vault_health.status | default(0) != 200) or
+    (_vcenter_info.about_info is not defined)

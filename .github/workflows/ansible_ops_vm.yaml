@@ -10,7 +10,7 @@ on:
       change_request_number: 
         description: "ServiceNow Change Request ID (e.g., CHG0031265). Mandatory for tracking."
         required: true
-        default: "CHG0031265"
+        default: "CHG0000001"
 
       build_site:
         type: choice
@@ -19,7 +19,7 @@ on:
         default: "sat-sg1n"
         options:
           - "sat-sg1n"
-          - "prd-sg1n"
+          - ${{ github.ref_name == 'main' && '"prd-sg1n"' || '' }}
 
       target_group:
         description: "Target host group(s) or VM(s) from Ansible inventory. 
@@ -53,6 +53,18 @@ env:
   ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
 
 jobs:
+
+  branch-check:
+    runs-on: [self-hosted]
+    steps:
+      - name: Block production on non-main branches
+        if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
+        run: |
+          echo "Production deployments only allowed on main branch"
+          echo "Current branch: ${{ github.ref_name }}"
+          echo "Selected environment: ${{ inputs.build_site }}"
+          exit 1
+
   pre:
     runs-on: [self-hosted]
     container:
@@ -85,7 +97,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Load env from default location
+      - name: Load env from ${{ inputs.build_site }} location
         run: >-
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
@@ -108,21 +120,22 @@ jobs:
           ansible-playbook --version
           ansible-galaxy collection list || true
 
-      # - name: Ansible check
-      #   env:
-      #     ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
-      #     ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
-      #     ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
-      #   id: ansible_check
-      #   working-directory: ansible/
-      #   run: >-
-      #     ansible-playbook
-      #     -i inventories/${{ inputs.build_site }}/hosts
-      #     -e "input_target_group=${{ inputs.target_group }}"
-      #     -e "input_state_group=${{ inputs.target_state }}"
-      #     -e "change_request_number=${{ inputs.change_request_number }}"
-      #     prepare_environment.yaml --check --diff
-          
+      - name: Ansible check
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_check
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts
+          -e "input_build_site=${{ inputs.build_site }}"
+          -e "input_target_group=${{ inputs.target_group }}"
+          -e "input_state_group=${{ inputs.target_state }}"
+          -e "change_request_number=${{ inputs.change_request_number }}"
+          -e "workflow_initiator=${{ github.actor }}"
+          prepare_environment.yaml --tags ansible_check
 
   apply:
     needs: [pre, validate]
@@ -140,7 +153,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Load env from default location
+      - name: Load env from ${{ inputs.build_site }} location
         run: >-
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
@@ -161,6 +174,7 @@ jobs:
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
+          -e "input_build_site=${{ inputs.build_site }}"
           -e "input_target_group=${{ inputs.target_group }}"
           -e "input_state_group=${{ inputs.target_state }}"
           -e "change_request_number=${{ inputs.change_request_number }}"

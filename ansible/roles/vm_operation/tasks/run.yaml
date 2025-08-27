@@ -1,0 +1,105 @@
+---
+
+- name: Check VM exists in vCenter
+  block:
+    - name: Get VM info from vCenter
+      community.vmware.vmware_guest_info:
+        hostname: "{{ vsphere_endpoint }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: "{{ vsphere_validate }}"
+        datacenter: "{{ vsphere_datacenter }}"
+        name: "{{ inventory_hostname_short }}"
+      register: _vm_info
+      delegate_to: localhost
+      ignore_errors: true
+
+    - name: Set Flag as 'exists'
+      set_fact:
+        _vm_exists: true
+        _vm_operation: "{{ 'Deploy' if 
+          input_state_group == 'present' else 'Delete' }}"
+  rescue:
+    - name: Abort if unexpected error at 'Get VM info from vCenter'
+      assert:
+        that:
+          - ('not found' in _vm_info.msg | lower) or 
+              ('unable to find' in _vm_info.msg | lower)
+        msg: "Unexpected error: {{ _vm_info.msg }}"
+
+    - name: Set Flag as 'not exists'
+      set_fact:
+        _vm_exists: false
+
+- name: "{{ _vm_operation | title }} VM 
+    {{ 'from template' if input_state_group == 'present' else '' }}"
+  community.vmware.vmware_guest:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    datacenter: "{{ vsphere_datacenter }}"
+    cluster: "{{ vsphere_cluster }}"
+    resource_pool: "{{ vsphere_resource_pool }}"
+    folder: "{{ vsphere_folder }}"
+    datastore: "{{ vsphere_datastore }}"
+    template: "{{ vsphere_template }}"
+    name: "{{ inventory_hostname_short }}"
+    networks:
+      - name: "{{ vsphere_portgroup }}"
+        ip: "{{ vm_deploy_ip }}"
+        netmask: "{{ vsphere_portgroup_netmask }}"
+        gateway: "{{ vsphere_portgroup_gateway }}"
+    customization:
+      dns_servers: "{{ dns_servers }}"
+    wait_for_customization: "{{ input_state_group == 'present' }}"
+    wait_for_ip_address: "{{ input_state_group == 'present' }}"
+    force: "{{ input_state_group == 'absent' }}"
+    state: "{{ input_state_group }}"
+  delegate_to: localhost
+
+- name: Wait for VM connection
+  ansible.builtin.wait_for_connection:
+    timeout: 300
+  when: input_state_group == 'present'
+
+- name: Ping VM
+  ansible.builtin.ping:
+  when: input_state_group == 'present'
+  ignore_unreachable: true
+
+- name: Get final VM info from vCenter
+  community.vmware.vmware_guest_info:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    datacenter: "{{ vsphere_datacenter }}"
+    name: "{{ inventory_hostname_short }}"
+  register: _vm_info_final
+  delegate_to: localhost
+  when: input_state_group == 'present'
+
+- name: Set final VM exists fact
+  set_fact:
+    _vm_exists_final: "{{ _vm_info_final is succeeded and 
+      _vm_info_final.instance is defined }}"
+  when: input_state_group == 'present'
+
+- name: Set final VM exists fact for absent
+  set_fact:
+    _vm_exists_final: false
+  when: input_state_group == 'absent'
+
+- name: Print VM status
+  debug:
+    msg: "{{ msg.split('\n') }}"
+  vars:
+    msg: |-
+      VM            : {{ inventory_hostname_short }}
+      Operation     : {{ _vm_operation }}
+      State         : {{ 'exists' if _vm_exists_final else 'not exists' }}
+      {% if _vm_exists_final %}
+      Power State   : {{ _vm_info_final.instance.hw_power_status | default('N/A') }}
+      IP Address    : {{ _vm_info_final.instance.ipv4 | default('N/A') }}
+      {% endif %}
