@@ -117,7 +117,7 @@ jobs:
           echo "'$CURRENT_USER' authorized for this workflow on main"
 
   validate:
-    needs: [access-check]
+    needs: [pre, access-check]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-validation"
     container:
