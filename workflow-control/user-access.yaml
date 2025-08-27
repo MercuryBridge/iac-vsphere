@@ -1,0 +1,14 @@
+---
+
+github_workflows:
+  "ansible-vsphere-vm-provision":
+    main_admin_user:
+      - duongvanthanh1992
+
+  "ansible-vsphere-vm-decom":
+    main_admin_user:
+      - duongvanthanh1992
+
+  "ansible-vsphere-vm-snapshot":
+    main_admin_user:
+      - duongvanthanh1992

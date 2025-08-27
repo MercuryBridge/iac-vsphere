@@ -54,19 +54,60 @@ env:
 
 jobs:
 
-  branch-check:
+  access-check:
     runs-on: [self-hosted]
+    container:
+      image: ubuntu:20.04
     steps:
+      - uses: actions/checkout@v5
+
       - name: Block production on non-main branches
         if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
         run: |
           echo "Production deployments only allowed on main branch"
-          echo "Current branch: ${{ github.ref_name }}"
-          echo "Selected environment: ${{ inputs.build_site }}"
+          echo "Branch: ${{ github.ref_name }} | Env: ${{ inputs.build_site }}"
           exit 1
 
+      - name: Install yq v4
+        run: |
+          apt-get update -y && apt-get install -y wget git
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Check workflow access (main branch only)
+        run: |
+          CURRENT_USER="${{ github.actor }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          CONFIG_FILE="workflow-control/user-access.yaml"
+          WORKFLOW_NAME="ansible-vsphere-vm-provision"
+          AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
+
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "Non-main branch: auth bypassed (prod already blocked)"
+            exit 0
+          fi
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Config file not found: $CONFIG_FILE"
+            exit 1
+          fi
+
+          if [ -z "$AUTHORIZED_USERS" ]; then
+            echo "No main_admin_user configured for workflow: $WORKFLOW_NAME"
+            exit 1
+          fi
+
+          if ! printf '%s\n' "$AUTHORIZED_USERS" | grep -qx -- "$CURRENT_USER"; then
+            echo "User '$CURRENT_USER' not authorized on main"
+            echo "Allowed: $(echo "$AUTHORIZED_USERS" | tr '\n' ' ')"
+            exit 1
+          fi
+
+          echo "'$CURRENT_USER' authorized for this workflow on main"
+
   pre:
-    needs: [branch-check]
+    needs: [access-check]
     runs-on: [self-hosted]
     container:
       image: ubuntu:20.04
