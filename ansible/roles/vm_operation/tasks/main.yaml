@@ -1,6 +1,6 @@
 ---
 
-- import_task: check.yaml
+- import_tasks: check.yaml
   tags: ansible_check
 
-- import_task: run.yaml
+- import_tasks: run.yaml
