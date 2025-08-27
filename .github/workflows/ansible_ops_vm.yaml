@@ -19,7 +19,7 @@ on:
         default: "sat-sg1n"
         options:
           - "sat-sg1n"
-          - ${{ github.ref_name == 'main' && '"prd-sg1n"' || '' }}
+          - "prd-sg1n"
 
       target_group:
         description: "Target host group(s) or VM(s) from Ansible inventory. 
