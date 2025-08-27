@@ -54,10 +54,27 @@ env:
 
 jobs:
 
-  access-check:
+  pre:
     runs-on: [self-hosted]
     container:
       image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+    outputs:
+      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
+      ansible_image: ${{ env.ANSIBLE_IMAGE }}
+
+  access-check:
+    needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
     steps:
       - uses: actions/checkout@v5
 
@@ -67,13 +84,6 @@ jobs:
           echo "Production deployments only allowed on main branch"
           echo "Branch: ${{ github.ref_name }} | Env: ${{ inputs.build_site }}"
           exit 1
-
-      - name: Install yq v4
-        run: |
-          apt-get update -y && apt-get install -y wget git
-          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-          yq --version
 
       - name: Check workflow access (main branch only)
         run: |
@@ -106,25 +116,8 @@ jobs:
 
           echo "'$CURRENT_USER' authorized for this workflow on main"
 
-  pre:
-    needs: [access-check]
-    runs-on: [self-hosted]
-    container:
-      image: ubuntu:20.04
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Load env from default location
-        run: >-
-          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
-          >> $GITHUB_ENV
-
-    outputs:
-      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
-      ansible_image: ${{ env.ANSIBLE_IMAGE }}
-
   validate:
-    needs: [pre]
+    needs: [access-check]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-validation"
     container:
