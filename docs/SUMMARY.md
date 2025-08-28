@@ -1,4 +1,4 @@
 # Summary
 
-- [Introduction](Introduction.md)
-- [Architecture](Architecture.md)
+- [Introduction](introduction.md)
+- [Architecture](architecture.md)
