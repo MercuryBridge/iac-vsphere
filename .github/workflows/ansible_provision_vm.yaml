@@ -89,7 +89,7 @@ jobs:
         run: |
           CURRENT_USER="${{ github.actor }}"
           CURRENT_BRANCH="${{ github.ref_name }}"
-          CONFIG_FILE="workflow-control/user-access.yaml"
+          CONFIG_FILE=".github/workflows-control/user-access.yaml"
           WORKFLOW_NAME="ansible-vsphere-vm-provision"
           AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
 
