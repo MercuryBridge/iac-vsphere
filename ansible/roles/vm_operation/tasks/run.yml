@@ -56,6 +56,12 @@
     wait_for_ip_address: "{{ input_state_group == 'present' }}"
     force: "{{ input_state_group == 'absent' }}"
     state: "{{ input_state_group }}"
+    annotation: |
+      {{ _vm_operation | title }} via Ansible Workflow
+        • Timestamp         : {{ '%Y-%m-%d %H:%M' | strftime }}
+        • ServiceNow ID     : {{ change_request_number }}
+        • Initiated By      : {{ workflow_initiator }}
+        • Owner             : {{ vm_service_owner }}
   delegate_to: localhost
 
 - name: Wait for VM connection
