@@ -1,55 +1,49 @@
-name: Ansible Pipeline for Decom VM
+name: Ansible vSphere VM Scanning Pipeline
 run-name: >
-  VM information : ${{ inputs.vm_name }} - ${{ inputs.vm_ipv4 }} - 
-  Site : ${{ inputs.build_site }} - 
-  Branch : ${{ github.ref_name }}
+  [${{ github.ref_name }}] ${{ inputs.build_site }} | Group/VM: ${{ inputs.target_group }} |
+  State: ${{ inputs.target_state }} | CR: ${{ inputs.change_request_number }}
 
 on:
   workflow_dispatch:
     inputs:
 
+      change_request_number: 
+        description: "ServiceNow Change Request ID (e.g., CHG0000001). Mandatory for tracking."
+        required: true
+        default: "CHG0000001"
+
       build_site:
         type: choice
-        description: "Environments for deployment. Used for Github Action.(e.g. SAT, PRD...)"
+        description: "Deployment environment/site (e.g., SAT, PRD)."
         required: true
         default: "sat-sg1n"
         options:
           - "sat-sg1n"
           - "prd-sg1n"
 
-      decom_action:
-        type: choice
-        description: "Select the decommission action: disconnect network, power off, or delete VM"
+      target_group:
+        description: "Target host group(s) or VM(s) from Ansible inventory. 
+          Use commas for multiple groups (e.g., vm-db,vm-non-db) or multiple VMs."
         required: true
-        default: "disconnect_network"
-        options:
-          - "disconnect_network"
-          - "power_off_vm"
-          - "delete_vm"
-
-      change_request_number: 
-        description: "Enter the ServiceNow Change Request number (e.g., CHG0031265)"
-        required: true
-        default: "CHG0031265"
-
-      vm_name: 
-        description: "Enter the VM Name."
-        required: true
-        default: ""
-
-      vm_ipv4:
-        description: "Enter the VM IPv4."
-        required: true
-        default: ""
+        default: "vm-db,vm-non-db"
 
 permissions:
   contents: read
   packages: read
 
+concurrency:
+  group: ansible-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}-${{ inputs.target_state }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
 env:
   ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
 
 jobs:
+
   pre:
     runs-on: [self-hosted]
     container:
@@ -66,8 +60,54 @@ jobs:
       ansible_runner: ${{ env.ANSIBLE_RUNNER }}
       ansible_image: ${{ env.ANSIBLE_IMAGE }}
 
-  validate-vm-information:
+  access-check:
     needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Block production on non-main branches
+        if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
+        run: |
+          echo "Production deployments only allowed on main branch"
+          echo "Branch: ${{ github.ref_name }} | Env: ${{ inputs.build_site }}"
+          exit 1
+
+      - name: Check workflow access (main branch only)
+        run: |
+          CURRENT_USER="${{ github.actor }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          CONFIG_FILE=".github/workflows_control/user_access.yaml"
+          WORKFLOW_NAME="ansible_vsphere_vm_scan"
+          AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
+
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "Non-main branch: auth bypassed (prod already blocked)"
+            exit 0
+          fi
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Config file not found: $CONFIG_FILE"
+            exit 1
+          fi
+
+          if [ -z "$AUTHORIZED_USERS" ]; then
+            echo "No main_admin_user configured for workflow: $WORKFLOW_NAME"
+            exit 1
+          fi
+
+          if ! printf '%s\n' "$AUTHORIZED_USERS" | grep -qx -- "$CURRENT_USER"; then
+            echo "User '$CURRENT_USER' not authorized on main"
+            echo "Allowed: $(echo "$AUTHORIZED_USERS" | tr '\n' ' ')"
+            exit 1
+          fi
+
+          echo "'$CURRENT_USER' authorized for this workflow on main"
+
+  validate:
+    needs: [pre, access-check]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-validation"
     container:
@@ -82,12 +122,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Load env from default location
+      - name: Load env from ${{ inputs.build_site }} location
         run: >-
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
 
-      - name: Copy private key & set permission
+      - name: Stage SSH key
         working-directory: ansible/
         run: |
           cp /secrets/private_ssh_key ./private_ssh_key
@@ -115,15 +155,14 @@ jobs:
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
-          -e "decom_run_phase=validate"
-          -e "decom_action=${{ inputs.decom_action }}"
+          -e "input_build_site=${{ inputs.build_site }}"
+          -e "input_target_group=${{ inputs.target_group }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
-          -e "vm_name=${{ inputs.vm_name }}"
-          -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
-          vcenter_decom_vm.yaml
+          -e "workflow_initiator=${{ github.actor }}"
+          prepare_environment.yaml --tags ansible_check
 
-  ansible-decom-vm:
-    needs: [pre, validate-vm-information]
+  apply:
+    needs: [pre, validate]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
     environment: "${{ inputs.build_site }}-approved"
     container:
@@ -138,12 +177,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Load env from default location
+      - name: Load env from ${{ inputs.build_site }} location
         run: >-
           grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
           >> $GITHUB_ENV
 
-      - name: Copy private key & set permission
+      - name: Stage SSH key
         working-directory: ansible/
         run: |
           cp /secrets/private_ssh_key ./private_ssh_key
@@ -159,10 +198,8 @@ jobs:
         run: >-
           ansible-playbook
           -i inventories/${{ inputs.build_site }}/hosts
-          -e "decom_run_phase=execute"
-          -e "decom_action=${{ inputs.decom_action }}"
+          -e "input_build_site=${{ inputs.build_site }}"
+          -e "input_target_group=${{ inputs.target_group }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
-          -e "vm_name=${{ inputs.vm_name }}"
-          -e "vm_ipv4=${{ inputs.vm_ipv4 }}"
           -e "workflow_initiator=${{ github.actor }}"
-          vcenter_decom_vm.yaml
+          prepare_environment.yaml

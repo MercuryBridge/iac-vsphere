@@ -89,8 +89,8 @@ jobs:
         run: |
           CURRENT_USER="${{ github.actor }}"
           CURRENT_BRANCH="${{ github.ref_name }}"
-          CONFIG_FILE=".github/workflows-control/user-access.yaml"
-          WORKFLOW_NAME="ansible-vsphere-vm-provision"
+          CONFIG_FILE=".github/workflows_control/user_access.yaml"
+          WORKFLOW_NAME="ansible_vsphere_vm_provision"
           AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
 
           if [ "$CURRENT_BRANCH" != "main" ]; then
