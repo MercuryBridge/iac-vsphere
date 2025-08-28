@@ -115,7 +115,7 @@
       Operation     : {{ _vm_operation }}
       State         : {{ 'exists' if _vm_exists_final else 'not exists' }}
       {% if _vm_exists_final %}
-      Power State   : {{ _vm_info_final.instance.hw_power_status 
+      Power State   : {{ _vm_info_final.instance.hw_power_status
         | default('N/A') }}
       IP Address    : {{ _vm_info_final.instance.ipv4 | default('N/A') }}
       {% endif %}
