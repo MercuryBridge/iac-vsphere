@@ -2,6 +2,10 @@
 extends: default
 
 rules:
+  # Allow 100 chars
+  line-length:
+    max: 100
+    level: error
   # Don't need "---"
   document-start:
     ignore:

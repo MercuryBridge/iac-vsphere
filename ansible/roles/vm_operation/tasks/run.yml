@@ -32,8 +32,7 @@
 
 - name: Set operation facts
   set_fact:
-    _vm_operation: >-
-      {{ 'Deploy' if input_state_group == 'present' else 'Delete' }}
+    _vm_operation: "{{ 'Deploy' if input_state_group == 'present' else 'Delete' }}"
     _timestamp: "{{ lookup('pipe','date +%Y-%m-%d\\ %H:%M') }}"
     _change_request: "{{ change_request_number | default('N/A') }}"
     _initiator: "{{ workflow_initiator | default('N/A') }}"
@@ -114,7 +113,6 @@
       Operation     : {{ _vm_operation }}
       State         : {{ 'exists' if _vm_exists_final else 'not exists' }}
       {% if _vm_exists_final %}
-      Power State   : {{ _vm_info_final.instance.hw_power_status
-        | default('N/A') }}
+      Power State   : {{ _vm_info_final.instance.hw_power_status | default('N/A') }}
       IP Address    : {{ _vm_info_final.instance.ipv4 | default('N/A') }}
       {% endif %}

@@ -46,15 +46,14 @@
       Initiator         : {{ workflow_initiator }}
       Target Group/VM   : {{ input_target_group }}
       VM Name           : {{ inventory_hostname_short }}
-      Operation         : {{ 'Deploy' if input_state_group == 'present'
-                            else 'Delete' }}
+      Operation         : {{ 'Deploy' if input_state_group == 'present' else 'Delete' }}
 
       CONNECTIVITY CHECKS:
       ├─ Vault Status   : {{ 'PASS'
            if _vault_health.status == 200
-           else 'FAIL -' + (_vault_health.msg | default('Connection fail')) }}
+           else 'FAIL - ' + (_vault_health.msg | default('Connection failed')) }}
       ├─ vCenter Status : {{ 'PASS' if _vcenter_info.about_info is defined
-           else 'FAIL -' + (_vcenter_info.msg | default('Connection fail')) }}
+           else 'FAIL - ' + (_vcenter_info.msg | default('Connection failed')) }}
       {% if _vcenter_info.about_info is defined %}
       ├─ vCenter Prod   : {{ _vcenter_info.about_info.product_full_name }}
       ├─ vCenter UUID   : {{ _vcenter_info.about_info.instance_uuid }}
