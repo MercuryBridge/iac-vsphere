@@ -1,12 +1,11 @@
 name: Secret Leak Scan
 
 on:
-
-  pull_request:
-  push:
   workflow_dispatch:
-  schedule:
-    - cron: "0 8 * * *"
+  # pull_request:
+  # push:
+  # schedule:
+  #   - cron: "0 8 * * *"
 
 jobs:
 

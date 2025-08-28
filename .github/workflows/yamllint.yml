@@ -1,0 +1,19 @@
+name: Ansible YAML Lint
+
+on:
+  pull_request:
+    branches:    
+      - main
+    paths:
+      - 'ansible/**'
+
+jobs:
+  yamllint:
+    runs-on: [self-hosted]
+    container:
+      image: pipelinecomponents/yamllint
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Do yamllint for roles
+        run: yamllint ansible/
