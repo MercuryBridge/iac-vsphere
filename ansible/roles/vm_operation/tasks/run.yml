@@ -22,7 +22,7 @@
     - name: Abort if unexpected error at 'Get VM info from vCenter'
       assert:
         that:
-          - ('not found' in _vm_info.msg | lower) or 
+          - ('not found' in _vm_info.msg | lower) or
               ('unable to find' in _vm_info.msg | lower)
         msg: "Unexpected error: {{ _vm_info.msg }}"
 
@@ -40,7 +40,7 @@
     _initiator: "{{ workflow_initiator | default('N/A') }}"
     _owner: "{{ input_vm_service_owner | default('N/A') }}"
 
-- name: "{{ _vm_operation | title }} VM 
+- name: "{{ _vm_operation | title }} VM
     {{ 'from template' if input_state_group == 'present' else '' }}"
   community.vmware.vmware_guest:
     hostname: "{{ vsphere_endpoint }}"
@@ -97,7 +97,7 @@
 
 - name: Set final VM exists fact
   set_fact:
-    _vm_exists_final: "{{ _vm_info_final is succeeded and 
+    _vm_exists_final: "{{ _vm_info_final is succeeded and
       _vm_info_final.instance is defined }}"
   when: input_state_group == 'present'
 

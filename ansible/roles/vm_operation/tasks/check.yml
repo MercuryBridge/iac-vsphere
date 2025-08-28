@@ -46,7 +46,7 @@
       Initiator         : {{ workflow_initiator }}
       Target Group/VM   : {{ input_target_group }}
       VM Name           : {{ inventory_hostname_short }}
-      Operation         : {{ 'Deploy' if input_state_group == 'present' 
+      Operation         : {{ 'Deploy' if input_state_group == 'present'
                             else 'Delete' }}
 
       CONNECTIVITY CHECKS:
