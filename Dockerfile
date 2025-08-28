@@ -23,9 +23,9 @@ COPY requirements/requirements.txt .
 RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt && \
     rm -fr /root/.cache/pip/
 
-COPY requirements/requirements.yaml .
-RUN ansible-galaxy collection install -v -r requirements.yaml && \
-    ansible-galaxy role install -v -r requirements.yaml --ignore-errors
+COPY requirements/requirements.yml .
+RUN ansible-galaxy collection install -v -r requirements.yml && \
+    ansible-galaxy role install -v -r requirements.yml --ignore-errors
 
 RUN apt-get update && \
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq && \
