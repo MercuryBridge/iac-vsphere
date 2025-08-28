@@ -12,7 +12,7 @@ jobs:
   scan:
     runs-on: [self-hosted]
     container:
-      image: ubuntu-24.04
+      image: ubuntu:latest
     steps:
       - uses: actions/checkout@v5
         with:
