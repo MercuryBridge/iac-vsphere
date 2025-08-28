@@ -71,8 +71,16 @@ jobs:
       - name: Block production on non-main branches
         if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
         run: |
-          echo "Production deployments only allowed on main branch"
-          echo "Branch: ${{ github.ref_name }} | Env: ${{ inputs.build_site }}"
+          TARGET_ENV="${{ inputs.build_site }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+
+          echo "==========================================="
+          echo " 🚫 Production deployment blocked"
+          echo "-------------------------------------------"
+          echo " Branch : $CURRENT_BRANCH"
+          echo " Env    : $TARGET_ENV"
+          echo " Reason : Only 'main' branch can deploy prod"
+          echo "==========================================="
           exit 1
 
       - name: Check workflow access (main branch only)
