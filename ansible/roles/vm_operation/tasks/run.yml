@@ -17,8 +17,7 @@
     - name: Set Flag as 'exists'
       set_fact:
         _vm_exists: true
-        _vm_operation: "{{ 'Deploy' if 
-          input_state_group == 'present' else 'Delete' }}"
+
   rescue:
     - name: Abort if unexpected error at 'Get VM info from vCenter'
       assert:
@@ -30,6 +29,11 @@
     - name: Set Flag as 'not exists'
       set_fact:
         _vm_exists: false
+
+- name: Set fact 
+  set_fact:
+    _vm_operation: "{{ 'Deploy' if input_state_group == 'present' 
+      else 'Delete' }}"
 
 - name: "{{ _vm_operation | title }} VM 
     {{ 'from template' if input_state_group == 'present' else '' }}"
