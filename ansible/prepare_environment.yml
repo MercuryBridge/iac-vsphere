@@ -1,7 +1,7 @@
 ---
 
 - hosts: "{{ input_target_group }}"
-  gather_facts: false
+  gather_facts: true
   tasks:
     - name: Prepare environment
       include_role:

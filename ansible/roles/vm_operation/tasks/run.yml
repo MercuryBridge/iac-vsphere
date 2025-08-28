@@ -57,7 +57,7 @@
     force: "{{ input_state_group == 'absent' }}"
     state: "{{ input_state_group }}"
     annotation: |
-      {{ _vm_operation | title }} via Ansible Workflow
+      {{ _vm_operation }} via Ansible Workflow
         • Timestamp         : {{ '%Y-%m-%d %H:%M' | strftime }}
         • ServiceNow ID     : {{ change_request_number }}
         • Initiated By      : {{ workflow_initiator }}

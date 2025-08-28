@@ -75,7 +75,7 @@ jobs:
           CURRENT_BRANCH="${{ github.ref_name }}"
 
           echo "==========================================="
-          echo " 🚫 Production deployment blocked"
+          echo "Production deployment blocked"
           echo "-------------------------------------------"
           echo " Branch : $CURRENT_BRANCH"
           echo " Env    : $TARGET_ENV"
