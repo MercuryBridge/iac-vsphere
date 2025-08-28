@@ -1,1 +1,12 @@
 ---
+extends: default
+
+rules:
+  # Don't need "---"
+  document-start:
+    ignore:
+      - .github/workflows/
+  # Don't warn "on" keyward (e.g. on: push)
+  truthy:
+    ignore:
+      - .github/workflows/
