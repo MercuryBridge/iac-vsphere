@@ -58,13 +58,11 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
 
 - **Main branch**
   - **SAT**: allowed **only** if the actor is in the workflow’s `main_admin_user`.
-      **Development (`sat-sg1n`)**:
       ```yaml
       environment: "sat-sg1n"  # Auto-approve
       ```
 
   - **PRD (`prd-sg1n`)**: Must `be main_admin_user (same as SAT)` and workflow requires **manual approval**. Only users explicitly assigned as approvers can approve and trigger the deployment.
-    **Production (`prd-sg1n`)**:
     ```yaml
     environment: "prd-sg1n"  # ⚠️ MANUAL APPROVAL REQUIRED
     ``` 
