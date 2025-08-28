@@ -52,9 +52,9 @@
       CONNECTIVITY CHECKS:
       ├─ Vault Status   : {{ 'PASS'
            if _vault_health.status == 200
-           else 'FAIL - ' + (_vault_health.msg | default('Connection failed')) }}
+           else 'FAIL -' + (_vault_health.msg | default('Connection fail')) }}
       ├─ vCenter Status : {{ 'PASS' if _vcenter_info.about_info is defined
-           else 'FAIL - ' + (_vcenter_info.msg | default('Connection failed')) }}
+           else 'FAIL -' + (_vcenter_info.msg | default('Connection fail')) }}
       {% if _vcenter_info.about_info is defined %}
       ├─ vCenter Prod   : {{ _vcenter_info.about_info.product_full_name }}
       ├─ vCenter UUID   : {{ _vcenter_info.about_info.instance_uuid }}
