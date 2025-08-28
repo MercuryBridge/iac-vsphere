@@ -1,3 +1,4 @@
+---
 
 # other options: set default explicitly
 esxi_ha_host_monitoring: enabled
