@@ -1,7 +1,7 @@
 [vm-db]
-sat-sg1n-vm-db-01 vm_deploy_ip=172.16.14.75 input_state_group=present vm_service_owner=HendryDing
-sat-sg1n-vm-db-02 vm_deploy_ip=172.16.14.76 input_state_group=present vm_service_owner=EuHock
+sat-sg1n-vm-db-01 vm_deploy_ip=172.16.14.75 input_state_group=present input_vm_service_owner=HendryDing
+sat-sg1n-vm-db-02 vm_deploy_ip=172.16.14.76 input_state_group=present input_vm_service_owner=EuHock
 
 [vm-non-db]
-sat-sg1n-vm-non-db-01 vm_deploy_ip=172.16.14.77 input_state_group=present vm_service_owner=Hien
-sat-sg1n-vm-non-db-02 vm_deploy_ip=172.16.14.78 input_state_group=present vm_service_owner=Tony
+sat-sg1n-vm-non-db-01 vm_deploy_ip=172.16.14.77 input_state_group=present input_vm_service_owner=Hien
+sat-sg1n-vm-non-db-02 vm_deploy_ip=172.16.14.78 input_state_group=present input_vm_service_owner=Tony

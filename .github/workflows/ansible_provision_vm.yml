@@ -33,7 +33,7 @@ on:
         description: "Owner of group(s) or VM(s) from Ansible inventory.
           Used to track and manage deployment lifecycle."
         required: true
-        default: "present"
+        default: "HendryDing"
         options:
           - "HendryDing"
           - "EuHock"
@@ -191,7 +191,7 @@ jobs:
           -e "input_state_group=${{ inputs.target_state }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
           -e "workflow_initiator=${{ github.actor }}"
-          -e "vm_service_owner={{inputs.vm_service_owner}}"
+          -e "input_vm_service_owner={{inputs.vm_service_owner}}"
           prepare_environment.yml --tags ansible_check
 
   apply:
@@ -236,5 +236,5 @@ jobs:
           -e "input_state_group=${{ inputs.target_state }}"
           -e "change_request_number=${{ inputs.change_request_number }}"
           -e "workflow_initiator=${{ github.actor }}"
-          -e "vm_service_owner={{inputs.vm_service_owner}}"
+          -e "input_vm_service_owner={{inputs.vm_service_owner}}"
           prepare_environment.yml
