@@ -36,7 +36,7 @@
     _timestamp: "{{ lookup('pipe','date +%Y-%m-%d\\ %H:%M') }}"
     _change_request: "{{ change_request_number | default('N/A') }}"
     _initiator: "{{ workflow_initiator | default('ansible') }}"
-    _owner: "{{ vm_service_owner | default('N/A') }}"
+    _owner: "{{ input_vm_service_owner | default('N/A') }}"
 
 - name: "{{ _vm_operation | title }} VM {{ 'from template' if input_state_group == 'present' else '' }}"
   community.vmware.vmware_guest:
