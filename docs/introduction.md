@@ -84,9 +84,9 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
     ```yaml
     name: Secret Leak Scan
     on:
-      workflow_dispatch:    # Manual trigger
-      pull_request:         # PR validation
-      push:                 # Commit validation
+      workflow_dispatch:     # Manual trigger
+      pull_request:          # PR validation
+      push:                  # Commit validation
       schedule:
         - cron: "0 8 * * *"  # Daily at 8 AM UTC
 
@@ -139,7 +139,7 @@ pyvmomi >= 7.0                    # VMware vSphere API
 vsphere-automation-sdk-python     # Advanced vSphere operations
 
 # Ansible Collections
-community.vmware                  # VMware modules
+community.vmware                 # VMware modules
 community.hashi_vault            # Vault integration
 ansible.posix                    # SSH/system operations
 
