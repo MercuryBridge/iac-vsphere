@@ -32,7 +32,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: ansible-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}-${{ inputs.target_state }}
+  group: ansible-scan-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}
   cancel-in-progress: false
 
 defaults:

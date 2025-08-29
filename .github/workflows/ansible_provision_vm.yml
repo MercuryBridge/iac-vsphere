@@ -55,7 +55,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: ansible-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}-${{ inputs.target_state }}
+  group: ansible-ops-${{ github.ref }}-${{ inputs.build_site }}-${{ inputs.target_group }}-${{ inputs.target_state }}
   cancel-in-progress: false
 
 defaults:
