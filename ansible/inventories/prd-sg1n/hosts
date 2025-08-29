@@ -1,6 +1,7 @@
 [vm-db]
 prd-sg1n-vm-db-01 vm_deploy_ip=172.16.14.79 input_state_group=present input_vm_service_owner=HendryDing 
 prd-sg1n-vm-db-02 vm_deploy_ip=172.16.14.80 input_state_group=present input_vm_service_owner=EuHock
+prd-sg1n-vm-db-03 vm_deploy_ip=172.16.14.83 input_state_group=present input_vm_service_owner=Hai
 
 [vm-non-db]
 prd-sg1n-vm-non-db-01 vm_deploy_ip=172.16.14.81 input_state_group=present input_vm_service_owner=Hien
