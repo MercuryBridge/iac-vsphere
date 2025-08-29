@@ -49,11 +49,12 @@ jobs:
 
   call:
     needs: [pre]
-    uses: mercurybridge/actions/.github/workflows/_run_ansible.yml@main
+    uses: MercuryBridge/actions/actions/workflows/_run_ansible.yml
     with:
       target_group: ${{ inputs.target_group }}
       change_request_number: ${{ inputs.change_request_number }}
       site: ${{ inputs.build_site }}
     secrets:
       token: ${{ needs.pre.outputs.pat_token }}
+
 
