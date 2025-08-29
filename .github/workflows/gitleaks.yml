@@ -21,9 +21,9 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_CONFIG: ".github/workflows_control/gitleaks.toml"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
         continue-on-error: true
       
       - name: Send Success Message
@@ -34,14 +34,12 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            ✅ *Security Scan Passed*
+            ✅ *SECURITY SCAN PASSED* ✅
             
-            *Actor*  :  `${{ github.actor }}`
-            *Repo*   :  `${{ github.repository }}`
+            *Actor*  : `${{ github.actor }}`
+            *Repo*   : `${{ github.repository }}`
             *Branch* : `${{ github.ref_name }}`
             *Commit* : `${{ github.sha }}`
-            
-            No secrets detected ✓
       
       - name: Send Failure Alert
         if: steps.gitleaks.outcome == 'failure'
@@ -51,13 +49,11 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message: |
-            🚨 *SECRETS DETECTED - URGENT*
+            🔥 *SECRETS DETECTED - URGENT* 🔥
             
-            *Actor*  :  `${{ github.actor }}`
-            *Repo*   :  `${{ github.repository }}`
+            *Actor*  : `${{ github.actor }}`
+            *Repo*   : `${{ github.repository }}`
             *Branch* : `${{ github.ref_name }}`
             *Commit* : `${{ github.sha }}`
             
-            ⚠️ Secret leaks detected!
-            
-            🚨 [TAKE IMMEDIATE ACTION](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [🚨 TAKE IMMEDIATE ACTION 🚨](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
