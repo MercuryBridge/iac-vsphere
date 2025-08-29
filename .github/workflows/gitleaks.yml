@@ -1,14 +1,12 @@
-name: Secret Leak Scan
-
+name: Secret Leak Scan | ${{ github.ref_name }} | ${{ github.event_name }} | ${{ github.actor }}
 on:
   workflow_dispatch:
   pull_request:
   push:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "0 */4 * * *"
 
 jobs:
-
   scan:
     runs-on: [self-hosted]
     container:
@@ -17,10 +15,49 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - uses: gitleaks/gitleaks-action@v2
+      
+      - name: Run Gitleaks
+        id: gitleaks
+        uses: gitleaks/gitleaks-action@v2
         env:
+          GITLEAKS_CONFIG: ".github/workflows_control/gitleaks.toml"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
-          GITLEAKS_CONFIG: ".github/workflows_control/gitleaks.toml"
+        continue-on-error: true
+      
+      - name: Send Success Message
+        if: steps.gitleaks.outcome == 'success'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_GROUP_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *Security Scan Passed*
+            
+            *Actor*  :  `${{ github.actor }}`
+            *Repo*   :  `${{ github.repository }}`
+            *Branch* : `${{ github.ref_name }}`
+            *Commit* : `${{ github.sha }}`
+            
+            No secrets detected ✓
+      
+      - name: Send Failure Alert
+        if: steps.gitleaks.outcome == 'failure'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_GROUP_ID }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            🚨 *SECRETS DETECTED - URGENT*
+            
+            *Actor*  :  `${{ github.actor }}`
+            *Repo*   :  `${{ github.repository }}`
+            *Branch* : `${{ github.ref_name }}`
+            *Commit* : `${{ github.sha }}`
+            
+            ⚠️ Secret leaks detected!
+            
+            🚨 [TAKE IMMEDIATE ACTION](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
