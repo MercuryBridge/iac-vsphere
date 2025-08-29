@@ -27,14 +27,16 @@ on:
         default: "vm-db,vm-non-db"
 
 jobs:
+
   pre: 
-    name: Fetch App Token
     runs-on: [self-hosted]
+    container:
+      image: ghcr.io/mercurybridge/iac-vsphere:sat-sg1n-latest
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
 
-      - name: Fetch App Token for all repositories in the organization
+      - name: Fetch App Token
         uses: actions/create-github-app-token@v1
         id: app-token
         with:
@@ -42,12 +44,15 @@ jobs:
           private-key: ${{ secrets.REQ_APP_KEY }}
           owner: ${{ github.repository_owner }}
 
+    outputs:
+      pat_token: ${{ steps.app-token.outputs.token }}
+
   call:
     needs: [pre]
     uses: MercuryBridge/actions/.github/workflows/_run_ansible.yml@main
     with:
       target_group: ${{ inputs.target_group }}
       change_request_number: ${{ inputs.change_request_number }}
-      build_site: ${{ inputs.build_site }}
+      site: ${{ inputs.build_site }}
     secrets:
-      token: ${{ steps.app-token.outputs.token }}
+      token: ${{ needs.pre.outputs.pat_token }}
