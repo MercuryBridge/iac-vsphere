@@ -21,8 +21,7 @@ on:
           - "prd-sg1n"
 
       target_group:
-        description: "Target host group(s) or VM(s) from Ansible inventory. 
-          Use commas for multiple groups (e.g., vm-db,vm-non-db) or multiple VMs."
+        description: "Target host group(s) or VM(s) from Ansible inventory."
         required: true
         default: "vm-db,vm-non-db"
 
@@ -49,13 +48,14 @@ jobs:
 
   call:
     needs: [pre]
-    uses: MercuryBridge/actions/actions/workflows/_run_ansible.yml@00b91cb5bd12fcdf9f2441c8c967232d4cd651e0
+    uses: MercuryBridge/actions/.github/workflows/_run_ansible.yml@00b91cb5bd12fcdf9f2441c8c967232d4cd651e0
     with:
       target_group: ${{ inputs.target_group }}
       change_request_number: ${{ inputs.change_request_number }}
       site: ${{ inputs.build_site }}
     secrets:
       token: ${{ needs.pre.outputs.pat_token }}
+
 
 
 
