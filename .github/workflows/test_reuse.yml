@@ -1,0 +1,53 @@
+name: Test
+run-name: "Test : ${{ inputs.site }}-${{ github.ref_name }}"
+
+on:
+  # Manual only
+  workflow_dispatch:
+    inputs:
+
+      change_request_number: 
+        description: "ServiceNow Change Request ID (e.g., CHG0000001). Mandatory for tracking."
+        required: true
+        default: "CHG0000001"
+
+      build_site:
+        type: choice
+        description: "Deployment environment/site (e.g., SAT, PRD)."
+        required: true
+        default: "sat-sg1n"
+        options:
+          - "sat-sg1n"
+          - "prd-sg1n"
+
+      target_group:
+        description: "Target host group(s) or VM(s) from Ansible inventory. 
+          Use commas for multiple groups (e.g., vm-db,vm-non-db) or multiple VMs."
+        required: true
+        default: "vm-db,vm-non-db"
+
+jobs:
+  pre: 
+    name: Fetch App Token
+    runs-on: [self-hosted]
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Fetch App Token for all repositories in the organization
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.REQ_APP_ID }}
+          private-key: ${{ secrets.REQ_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+
+  call:
+    needs: [pre]
+    uses: MercuryBridge/actions/.github/workflows/_run_ansible.yml@main
+    with:
+      target_group: ${{ inputs.target_group }}
+      change_request_number: ${{ inputs.change_request_number }}
+      build_site: ${{ inputs.build_site }}
+    secrets:
+      token: ${{ steps.app-token.outputs.token }}
