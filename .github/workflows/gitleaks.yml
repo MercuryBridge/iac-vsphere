@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-  schedule:
-    - cron: "0 */4 * * *"
+  # schedule:
+  #   - cron: "0 */4 * * *"
 
 jobs:
   scan:
@@ -25,10 +25,9 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        continue-on-error: true
       
       - name: Send Success Message
-        if: steps.gitleaks.outcome == 'success'
+        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_GROUP_ID }}
@@ -43,7 +42,7 @@ jobs:
             *Commit* : `${{ github.sha }}`
       
       - name: Send Failure Alert
-        if: steps.gitleaks.outcome == 'failure'
+        if: failure()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_GROUP_ID }}
@@ -58,3 +57,7 @@ jobs:
             *Commit* : `${{ github.sha }}`
             
             [🚨 TAKE IMMEDIATE ACTION 🚨](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      
+      - name: Fail Job on Secrets
+        if: failure()
+        run: exit 1
