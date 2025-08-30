@@ -1,0 +1,179 @@
+---
+
+- name: Read CSV file
+  set_fact:
+    _csv_content: >-
+      {{ lookup('file', 'inventories/vm_inventory.csv') }}
+
+- name: Parse CSV manually
+  set_fact:
+    _csv_data: >-
+      {{ _csv_data | default([]) + [dict(_csv_headers |
+      zip(line.split(',')))] }}
+  loop: >-
+    {{ _csv_content.split('\n')[1:] }}
+  loop_control:
+    loop_var: line
+  when: line | trim | length > 0
+
+- name: Get ALL A records in domain
+  ansible.windows.win_shell: |
+    Get-DnsServerResourceRecord -ZoneName "{{ _ad_zone }}" -RRType A
+  register: _all_a_records
+
+- name: Parse current DNS records
+  set_fact:
+    _current_dns: >-
+      {{ _current_dns | default([]) + [{'hostname':
+      item.split()[0], 'ip': item.split()[-1]}] }}
+  loop: >-
+    {{ _all_a_records.stdout_lines |
+    select('match', '^[^-\s].*') | list }}
+  vars:
+    _current_dns: []
+  when:
+    - _all_a_records.stdout_lines | length > 0
+    - item.split() | length > 0
+    - item.split()[0] != "HostName"
+    - item.split()[0] != "--------"
+
+- name: Find missing DNS records
+  set_fact:
+    _missing_dns: >-
+      {{ _csv_data | rejectattr('vm_name', 'in',
+      _current_dns_hostnames) | list }}
+  vars:
+    _current_dns_hostnames: >-
+      {{ _current_dns | map(attribute='hostname') | list }}
+
+- name: Find extra DNS records
+  set_fact:
+    _extra_dns: >-
+      {{ _current_dns | rejectattr('hostname', 'in', _csv_hostnames) |
+      rejectattr('hostname', 'in', _skip_dns_records) | list }}
+  vars:
+    _csv_hostnames: >-
+      {{ _csv_data | map(attribute='vm_name') | list }}
+
+- name: Initialize IP mismatches
+  set_fact:
+    _ip_mismatches: []
+
+- name: Check for IP mismatches
+  set_fact:
+    _ip_mismatches: >-
+      {{ _ip_mismatches + [{'csv': _csv_vm, 'dns': _dns_vm}] }}
+  loop: "{{ _csv_data }}"
+  loop_control:
+    loop_var: _csv_vm
+  vars:
+    _dns_vm: >-
+      {{ _current_dns | selectattr('hostname', 'equalto',
+      _csv_vm.vm_name) | first | default({}) }}
+  when:
+    - _dns_vm.ip is defined
+    - _dns_vm.ip != _csv_vm.vm_ip_addr
+
+- name: Show CSV data
+  debug:
+    msg: >-
+      CSV VMs: {{ _csv_data | map(attribute='vm_name') | list }}
+
+- name: Show current DNS
+  debug:
+    msg: >-
+      Current DNS: {{ _current_dns }}
+
+- name: Show missing DNS records
+  debug:
+    msg: >-
+      Missing in DNS: {{ _missing_dns | map(attribute='vm_name') | list }}
+
+- name: Show extra DNS records
+  debug:
+    msg: >-
+      Extra in DNS: {{ _extra_dns | map(attribute='hostname') | list }}
+
+- name: Show IP mismatches
+  debug:
+    msg: >-
+      IP mismatches: {{ _ip_mismatches }}
+
+- name: Create missing DNS A records
+  ansible.windows.win_shell: |
+    Add-DnsServerResourceRecordA `
+      -ZoneName "{{ item.vm_dns_zone }}" `
+      -Name "{{ item.vm_name }}" `
+      -IPv4Address "{{ item.vm_ip_addr }}" `
+      -CreatePtr
+  loop: "{{ _missing_dns }}"
+  register: _dns_create_results
+  when: _missing_dns | length > 0
+
+- name: Update DNS records with wrong IPs
+  ansible.windows.win_shell: |
+    $zone  = "{{ item.csv.vm_dns_zone }}"
+    $name  = "{{ item.csv.vm_name }}"
+    $newIp = "{{ item.csv.vm_ip_addr }}"
+    $oldIp = "{{ item.dns.ip }}"
+
+    Remove-DnsServerResourceRecord `
+      -ZoneName $zone -Name $name -RRType A `
+      -Force -ErrorAction SilentlyContinue
+
+    $o = $oldIp.Split('.')
+    if ($o.Count -eq 4) {
+      $oldRev = "$($o[2]).$($o[1]).$($o[0]).in-addr.arpa"
+      $oldPtrNm = $o[3]
+      $oldPtr = Get-DnsServerResourceRecord `
+        -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
+        -ErrorAction SilentlyContinue
+      if ($null -ne $oldPtr) {
+        Remove-DnsServerResourceRecord `
+          -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
+          -Force -ErrorAction SilentlyContinue
+      }
+    }
+
+    Add-DnsServerResourceRecordA `
+      -ZoneName $zone -Name $name -IPv4Address $newIp -CreatePtr
+  loop: "{{ _ip_mismatches }}"
+  when: _ip_mismatches | length > 0
+
+- name: Remove extra DNS records with PTR cleanup
+  ansible.windows.win_shell: |
+    $zone = "{{ _ad_zone }}"
+    $name = "{{ item.hostname }}"
+    $oldIp = "{{ item.ip }}"
+
+    Remove-DnsServerResourceRecord `
+      -ZoneName $zone -Name $name -RRType A `
+      -Force -ErrorAction SilentlyContinue
+
+    $o = $oldIp.Split('.')
+    if ($o.Count -eq 4) {
+      $oldRev = "$($o[2]).$($o[1]).$($o[0]).in-addr.arpa"
+      $oldPtrNm = $o[3]
+      $oldPtr = Get-DnsServerResourceRecord `
+        -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
+        -ErrorAction SilentlyContinue
+      if ($null -ne $oldPtr) {
+        Remove-DnsServerResourceRecord `
+          -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
+          -Force -ErrorAction SilentlyContinue
+      }
+    }
+  loop: "{{ _extra_dns }}"
+  when:
+    - _extra_dns | length > 0
+    - true
+
+- name: Final report
+  debug:
+    msg: |-
+      DNS Management Summary:
+      - Created {{ _missing_dns | length }} new records
+      - Updated {{ _ip_mismatches | length }} mismatched records
+      - Found {{ _extra_dns | length }} extra records (not removed)
+      - Total CSV entries: {{ _csv_data | length }}
+      - Total current DNS entries: {{ _current_dns | length }}
