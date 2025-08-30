@@ -1,0 +1,145 @@
+name: Ansible vSphere Auto VM Scanning
+run-name: >
+  [${{ github.ref_name }}] Ansible Auto Scan ${{ env.SCAN_SITE }}
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ${{ github.ref_name }}-ansible-auto-scan-${{ env.SCAN_SITE }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+env:
+  ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
+  SCAN_SITE: "sat-sg1n"
+
+jobs:
+
+  pre:
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Load env from ${{ env.SCAN_SITE }} location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${SCAN_SITE}.env"
+          >> "$GITHUB_ENV"
+
+    outputs:
+      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
+      ansible_image: ${{ env.ANSIBLE_IMAGE }}
+
+  access-check:
+    needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Block production on non-main branches
+        if: env.SCAN_SITE == 'prd-sg1n' && github.ref_name != 'main'
+        run: |
+          TARGET_ENV="${{ env.SCAN_SITE }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+
+          echo "==========================================="
+          echo "Production deployment blocked"
+          echo "-------------------------------------------"
+          echo " Branch : $CURRENT_BRANCH"
+          echo " Env    : $TARGET_ENV"
+          echo " Reason : Only 'main' branch can deploy prod"
+          echo "==========================================="
+          exit 1
+
+      - name: Check workflow access (main branch only)
+        run: |
+          CURRENT_USER="${{ github.actor }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          CONFIG_FILE=".github/workflows_control/user_access.yml"
+          WORKFLOW_NAME="ansible_vsphere_vm_scan"
+          AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
+
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "Non-main branch: auth bypassed (prod already blocked)"
+            exit 0
+          fi
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Config file not found: $CONFIG_FILE"
+            exit 1
+          fi
+
+          if [ -z "$AUTHORIZED_USERS" ]; then
+            echo "No main_admin_user configured for workflow: $WORKFLOW_NAME"
+            exit 1
+          fi
+
+          if ! printf '%s\n' "$AUTHORIZED_USERS" | grep -qx -- "$CURRENT_USER"; then
+            echo "User '$CURRENT_USER' not authorized on main"
+            echo "Allowed: $(echo "$AUTHORIZED_USERS" | tr '\n' ' ')"
+            exit 1
+          fi
+
+          echo "'$CURRENT_USER' authorized for this workflow on main"
+
+  validate:
+    needs: [pre, access-check]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ env.SCAN_SITE }}-validation"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from ${{ env.SCAN_SITE }} location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${SCAN_SITE}.env"
+          >> "$GITHUB_ENV"
+
+      - name: Stage SSH key
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+
+      - name: Print env
+        run: |
+          printenv
+
+      - name: Print ansible version
+        working-directory: ansible/
+        run: |
+          ansible-playbook --version
+          ansible-galaxy collection list || true
+
+      - name: Ansible check
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_check
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ env.SCAN_SITE }}/hosts
+          ansible_auto_scan_vm.yml
