@@ -1,1 +1,5 @@
-vm_owner,vm_name,vm_ad_zone,vm_state,vm_ip_addr,vm_netmask,vm_gateway,vm_dns1,vm_dns2,vc_datacenter,vc_cluster,vc_resource_pool,vc_folder,vc_datastore,vc_notes
+vm_state,vm_name,vm_dns_zone,vm_ip_addr,vm_netmask,vm_gateway,vm_dns1,vm_dns2,vm_owner
+on,sat-sg1n-vm-db-01,tony.local,172.16.14.75,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Tony
+on,sat-sg1n-vm-db-02,tony.local,172.16.14.76,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Eu-Hock
+off,sat-sg1n-vm-non-db-01,tony.local,172.16.14.77,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Binh
+on,sat-sg1n-vm-non-db-02,tony.local,172.16.14.78,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Hien

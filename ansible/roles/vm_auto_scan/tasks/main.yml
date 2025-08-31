@@ -1,20 +1,28 @@
 ---
 
-- name: Read CSV file
+- name: Read VM data CSV file
   set_fact:
     _csv_content: >-
-      {{ lookup('file', 'inventories/vm_inventory.csv') }}
+      {{ lookup('file', inventory_dir ~ '/vm_inventory.csv') }}
+  delegate_to: localhost
 
 - name: Parse CSV manually
   set_fact:
     _csv_data: >-
       {{ _csv_data | default([]) + [dict(_csv_headers |
       zip(line.split(',')))] }}
-  loop: >-
-    {{ _csv_content.split('\n')[1:] }}
+  loop: "{{ _csv_content.split('\n')[1:] }}"
   loop_control:
     loop_var: line
   when: line | trim | length > 0
+  delegate_to: localhost
+
+- name: Filter by vm_state
+  set_fact:
+    _active_vms: >-
+      {{ _csv_data | selectattr('vm_state', 'ne', 'delete') | list }}
+    _delete_vms: >-
+      {{ _csv_data | selectattr('vm_state', 'equalto', 'delete') | list }}
 
 - name: Get ALL A records in domain
   ansible.windows.win_shell: |
@@ -40,7 +48,7 @@
 - name: Find missing DNS records
   set_fact:
     _missing_dns: >-
-      {{ _csv_data | rejectattr('vm_name', 'in',
+      {{ _active_vms | rejectattr('vm_name', 'in',
       _current_dns_hostnames) | list }}
   vars:
     _current_dns_hostnames: >-
@@ -53,7 +61,7 @@
       rejectattr('hostname', 'in', _skip_dns_records) | list }}
   vars:
     _csv_hostnames: >-
-      {{ _csv_data | map(attribute='vm_name') | list }}
+      {{ _active_vms | map(attribute='vm_name') | list }}
 
 - name: Initialize IP mismatches
   set_fact:
@@ -63,7 +71,7 @@
   set_fact:
     _ip_mismatches: >-
       {{ _ip_mismatches + [{'csv': _csv_vm, 'dns': _dns_vm}] }}
-  loop: "{{ _csv_data }}"
+  loop: "{{ _active_vms }}"
   loop_control:
     loop_var: _csv_vm
   vars:
@@ -77,27 +85,27 @@
 - name: Show CSV data
   debug:
     msg: >-
-      CSV VMs: {{ _csv_data | map(attribute='vm_name') | list }}
+      {{ _active_vms | map(attribute='vm_name') | list | to_nice_json }}
 
 - name: Show current DNS
   debug:
     msg: >-
-      Current DNS: {{ _current_dns }}
+      {{ _current_dns | to_nice_json }}
 
 - name: Show missing DNS records
   debug:
     msg: >-
-      Missing in DNS: {{ _missing_dns | map(attribute='vm_name') | list }}
+      {{ _missing_dns | map(attribute='vm_name') | list | to_nice_json }}
 
 - name: Show extra DNS records
   debug:
     msg: >-
-      Extra in DNS: {{ _extra_dns | map(attribute='hostname') | list }}
+      {{ _extra_dns | map(attribute='hostname') | list | to_nice_json }}
 
 - name: Show IP mismatches
   debug:
     msg: >-
-      IP mismatches: {{ _ip_mismatches }}
+      {{ _ip_mismatches | to_nice_json }}
 
 - name: Create missing DNS A records
   ansible.windows.win_shell: |
@@ -140,40 +148,39 @@
   loop: "{{ _ip_mismatches }}"
   when: _ip_mismatches | length > 0
 
-- name: Remove extra DNS records with PTR cleanup
+- name: Remove DNS records for deleted VMs
   ansible.windows.win_shell: |
-    $zone = "{{ _ad_zone }}"
-    $name = "{{ item.hostname }}"
-    $oldIp = "{{ item.ip }}"
+    $zone = "{{ item.vm_dns_zone }}"
+    $name = "{{ item.vm_name }}"
+    
+    $record = Get-DnsServerResourceRecord -ZoneName $zone `
+      -Name $name -RRType A -ErrorAction SilentlyContinue
+    if ($record) {
+      $oldIp = $record.RecordData.IPv4Address.ToString()
+      
+      Remove-DnsServerResourceRecord `
+        -ZoneName $zone -Name $name -RRType A `
+        -Force -ErrorAction SilentlyContinue
 
-    Remove-DnsServerResourceRecord `
-      -ZoneName $zone -Name $name -RRType A `
-      -Force -ErrorAction SilentlyContinue
-
-    $o = $oldIp.Split('.')
-    if ($o.Count -eq 4) {
-      $oldRev = "$($o[2]).$($o[1]).$($o[0]).in-addr.arpa"
-      $oldPtrNm = $o[3]
-      $oldPtr = Get-DnsServerResourceRecord `
-        -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
-        -ErrorAction SilentlyContinue
-      if ($null -ne $oldPtr) {
+      $o = $oldIp.Split('.')
+      if ($o.Count -eq 4) {
+        $oldRev = "$($o[2]).$($o[1]).$($o[0]).in-addr.arpa"
+        $oldPtrNm = $o[3]
         Remove-DnsServerResourceRecord `
           -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
           -Force -ErrorAction SilentlyContinue
       }
     }
-  loop: "{{ _extra_dns }}"
-  when:
-    - _extra_dns | length > 0
-    - true
+  loop: "{{ _delete_vms }}"
+  when: _delete_vms | length > 0
 
-- name: Final report
+- name: Final DNS report
   debug:
     msg: |-
       DNS Management Summary:
       - Created {{ _missing_dns | length }} new records
       - Updated {{ _ip_mismatches | length }} mismatched records
-      - Found {{ _extra_dns | length }} extra records (not removed)
+      - Deleted {{ _delete_vms | length }} records
+      - Found {{ _extra_dns | length }} extra records and removed
       - Total CSV entries: {{ _csv_data | length }}
       - Total current DNS entries: {{ _current_dns | length }}
