@@ -1,0 +1,78 @@
+---
+
+- name: Read VM data CSV file
+  set_fact:
+    _csv_content: >-
+      {{ lookup('file', inventory_dir ~ '/vm_data.csv') }}
+  delegate_to: localhost
+  run_once: true
+  
+- name: Parse CSV manually
+  set_fact:
+    _csv_data: >-
+      {{ _csv_data | default([]) + [dict(_csv_headers |
+      zip(line.split(',')))] }}
+  loop: "{{ _csv_content.split('\n')[1:] }}"
+  loop_control:
+    loop_var: line
+  when: line | trim | length > 0
+  delegate_to: localhost
+  run_once: true
+
+- name: State mapping on localhost
+  set_fact:
+    _state_map:
+      'on': 'poweredon'
+      'off': 'poweredoff' 
+      'delete': 'absent'
+  delegate_to: localhost
+  run_once: true
+
+- name: Map VM states on localhost
+  set_fact:
+    _csv_mapped: >-
+      {{ _csv_mapped | default([]) + [item | combine({
+        'vmware_state': _state_map[item.vm_state] | default('poweredon')
+      })] }}
+  loop: "{{ _csv_data }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Share CSV data to all hosts
+  set_fact:
+    _csv_vm_data: "{{ _csv_mapped }}"
+  delegate_to: localhost
+
+- name: Find current VM data
+  set_fact:
+    _current_vm: "{{ _csv_vm_data | selectattr('vm_name', 'equalto', inventory_hostname) | first | default({}) }}"
+
+- debug:
+    var: _current_vm
+    
+- name: Execute VM operation
+  community.vmware.vmware_guest:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}" 
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    datacenter: "{{ vsphere_datacenter }}"
+    cluster: "{{ vsphere_cluster }}"
+    resource_pool: "{{ vsphere_resource_pool | default(omit) }}"
+    folder: "{{ vsphere_folder | default(omit) }}"
+    datastore: "{{ vsphere_datastore | default(omit) }}"
+    template: "{{ vsphere_template | default(omit) }}"
+    name: "{{ _current_vm.vm_name }}"
+    state: "{{ _current_vm.vmware_state }}"
+    networks:
+      - name: "{{ _current_vm.vm_portgroup }}"
+        ip: "{{ _current_vm.vm_ip_addr }}"
+        netmask: "{{ _current_vm.vm_netmask }}"
+        gateway: "{{ _current_vm.vm_gateway }}"
+    customization:
+      dns_servers: "{{ dns_servers }}"
+    wait_for_customization: "{{ _current_vm.vmware_state == 'poweredon' }}"
+    wait_for_ip_address: "{{ _current_vm.vmware_state == 'poweredon' }}"
+    force: "{{ _current_vm.vmware_state in ['absent', 'poweredoff'] }}"
+  when: _current_vm != {}
+  delegate_to: localhost
