@@ -244,8 +244,7 @@ prd-sg1n:
 ```mermaid
 ---
 config:
-  look: neo
-  theme: neo
+  theme: neutral
 ---
 flowchart TD
     A[User triggers workflow] --> B[Input Validation<br/>• Required input fields<br/>• User authorization]
