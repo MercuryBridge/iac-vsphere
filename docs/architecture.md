@@ -169,7 +169,7 @@ secrets:
   GITHUB_TOKEN:                   # Auto-generated (registry access)
   ANSIBLE_HASHI_VAULT_ADDR:       # https://vault.company.com:8200
   ANSIBLE_HASHI_VAULT_TOKEN:      # hvs.XXXXXX (service account token)
-  ANSIBLE_HASHI_VAULT_PATH_BASE:  # secret/data/vsphere/prod
+  ANSIBLE_HASHI_VAULT_PATH_BASE:  # secret/kv/vsphere/prod
   GITLEAKS_LICENSE:               # GitLeaks license key
 ```
 
@@ -241,50 +241,21 @@ prd-sg1n:
 
 ### Approval Process Flow
 
-```
-User triggers workflow
-   │
-   ▼
-┌──────────────────────┐
-│ Input Validation     │
-│ • Required fields    │
-│ • User authorization │
-└──────────────────────┘
-      │
-      ▼
-┌──────────────────────┐
-│ Pre-flight Checks    │
-│ • Branch validation  │
-│ • User permissions   │
-│ • Environment load   │
-└──────────────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ Validation Stage     │
-│ • Connectivity test  │
-│ • Resource verify    │
-└──────────────────────┘
-            │
-            ▼
-┌─────────────────────┐
-│ Environment Check   │
-│                     │
-├──── sat-sg1n ───────│───▶  Auto-proceed to execution            
-│                     │  
-├──── prd-sg1n ───────│───▶ ⚠️ MANUAL APPROVAL 
-└─────────────────────┘     ┌───────────────────────┐
-                            │ • Email notification  │
-                            │ • GitHub UI prompt    │
-                            │ • Wait for approval   │
-                            └───────────────────────┘
-                        ◀── 
-┌─────────────────────┐    
-│ Execution Stage     │   
-│ • VM operations     │
-│ • Configuration     │
-│ • Verification      │
-└─────────────────────┘   
+```mermaid
+---
+config:
+  look: neo
+  theme: neo
+---
+flowchart TD
+    A[User triggers workflow] --> B[Input Validation<br/>• Required input fields<br/>• User authorization]
+    B --> C[Pre-flight Checks<br/>• Branch validation<br/>• User permissions<br/>• Environment load]
+    C --> D[Validation Stage<br/>• Connectivity test<br/>• Resource verify]
+    D --> E{Environment Check}
+    E -->|sat-sg1n| F[Auto-proceed to execution]
+    E -->|prd-sg1n| G[⚠️ MANUAL APPROVAL<br/>• Email notification<br/>• GitHub UI prompt<br/>• Wait for approval]
+    F --> H[Execution Stage<br/>• VM operations<br/>• Configuration<br/>• Verification]
+    G --> H
 ```
 
 ## Ansible Task Workflow Architecture

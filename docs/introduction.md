@@ -4,19 +4,29 @@
 
 This repository implements enterprise-grade VMware vSphere automation through GitHub Actions with multi-layered security, approval workflows, and comprehensive audit trails.
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌───────────────────┐
-│  GitHub Actions │────│  Docker Container│────│  Ansible Runner   │
-│                 │    │  (Custom Image)  │    │                   │
-└─────────────────┘    └──────────────────┘    └───────────────────┘
-         │                        │                        │
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌──────────────────┐    ┌───────────────────┐
-│  GitHub Secrets │────│  HashiCorp Vault │────│  VMware vCenter   │
-│  • Vault Token  │    │  • vSphere Creds │    │  • VM Operations  │
-│  • Vault URL    │    │  • SSH Keys      │    │  • Templates      │
-└─────────────────┘    └──────────────────┘    └───────────────────┘
+```mermaid
+---
+config:
+  layout: elk
+  look: neo
+  theme: neo
+---
+flowchart LR
+ subgraph Github["<br>GitHub"]
+        GHA["GitHub Actions"]
+        GHS["GitHub Secrets<br>• Vault URL<br>• Vault Token"]
+  end
+ subgraph On-premises["<br>On-premises (SAT)<br>(Self-Hosted Github Runner)"]
+        DC["Docker Container<br>Custom Image"]
+        A["Ansible Runner"]
+        HV["HashiCorp Vault<br>• SSH Keys<br>• vSphere Creds"]
+        VC["VMware vCenter<br>• VM Operations<br>• VM Scan"]
+  end
+    GHA --> GHS & DC
+    DC --> A & HV
+    HV --> VC
+    GHS --> HV
+    A --> VC
 ```
 
 ### Access Control & Security Framework
@@ -107,7 +117,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
     on:
       pull_request:
         branches: [main]
-        paths: ['ansible/**']  # Only scan Ansible files
+        paths: ['ansible/**']       # Only scan Ansible files
 
     jobs:
       yamllint:

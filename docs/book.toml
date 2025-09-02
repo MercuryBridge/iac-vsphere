@@ -15,3 +15,7 @@ preferred-dark-theme = "rust"
 git-repository-url = "https://github.com/mercurybridge/iac-vsphere"
 git-repository-icon = "fa-github"
 copy-font = true
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
