@@ -30,6 +30,8 @@ jobs:
           cargo install cargo-xtask
           git clone https://github.com/badboy/mdbook-mermaid.git
           cd mdbook-mermaid
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
           cargo xtask 11.10.1
           cargo install --path .
 
