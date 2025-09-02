@@ -7,26 +7,37 @@ This repository implements enterprise-grade VMware vSphere automation through Gi
 ```mermaid
 ---
 config:
-  layout: elk
-  look: neo
-  theme: neo
+  theme: neutral
 ---
 flowchart LR
- subgraph Github["<br>GitHub"]
-        GHA["GitHub Actions"]
-        GHS["GitHub Secrets<br>• Vault URL<br>• Vault Token"]
+ subgraph subGraph0["☁️ GitHub"]
+    direction TB
+        GHA["GitHub Actions<br>Workflows"]
+        GHS["🔐 GitHub Secrets<br>• Vault URL<br>• Vault Token"]
   end
- subgraph On-premises["<br>On-premises (SAT)<br>(Self-Hosted Github Runner)"]
-        DC["Docker Container<br>Custom Image"]
-        A["Ansible Runner"]
-        HV["HashiCorp Vault<br>• SSH Keys<br>• vSphere Creds"]
-        VC["VMware vCenter<br>• VM Operations<br>• VM Scan"]
+ subgraph subGraph1["⚙️ Infrastructure"]
+    direction TB
+        A["📋 Ansible Playbook"]
+        HV["🗝️ HashiCorp Vault<br>• SSH Keys<br>• AD Credentials<br>• vSphere Credentials"]
+        VC["VMware vCenter<br>• VM Scanning<br>• VM Operations"]
   end
-    GHA --> GHS & DC
-    DC --> A & HV
-    HV --> VC
-    GHS --> HV
-    A --> VC
+ subgraph subGraph2["On-premises SAT"]
+    direction TB
+        SHR["Github Runner (Self-Hosted)<br>🐳 Docker Container 🐳<br>• Run Custom Image"]
+        subGraph1
+  end
+    GHA == triggers ==> SHR
+    GHS -. provides secrets .-> SHR
+    SHR == executes ==> A
+    SHR -. authenticates .-> HV
+    A == "community.vmware" ==> VC
+    HV -. secures .-> VC
+    style GHA fill:#2563eb,stroke:#1e40af,color:#fff
+    style GHS fill:#7c3aed,stroke:#6d28d9,color:#fff
+    style A fill:#dc2626,stroke:#b91c1c,color:#fff
+    style HV fill:#ea580c,stroke:#c2410c,color:#fff
+    style VC fill:#0891b2,stroke:#0e7490,color:#fff
+    style SHR fill:#059669,stroke:#047857,color:#fff
 ```
 
 ### Access Control & Security Framework
