@@ -24,8 +24,12 @@
 | Scenario | Terraform | Ansible |
 |----------|-----------|---------|
 | **VM Name Conflict** | Error - cannot create if name exists | Handles gracefully with proper playbook logic |
-| **External VM Deletion** | Detects drift, can recreate on next apply | Requires manual state verification |
-| **Out-of-Band Changes** | Not be considered if not on state file | No automatic drift detection - Need to create playbook logic to do that |
+| **VM Deletion** | Detects drift, can re-create on next apply | Requires playbook for verification and can re-create on next apply |
+| **VM Resource Drift** | Detects drift & reconfigures automatically on next apply | Needs custom task to check + reapply configuration |
+| **Partial Infrastructure** | Only touches resources in state file | Only touches resources in playbook scope |
+| **State Corruption** | State file backup/recovery mechanisms | No state to corrupt, but no change tracking |
+| **Cross-Environment Sync** | Workspace isolation with separate state files | Separate inventory files per environment |
+| **Rollback Requirements** | State history + version control for rollbacks | Manual playbook versioning + VMware snaphot for rollbacks |
 
 ## Security & State Management
 
