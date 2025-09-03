@@ -244,7 +244,8 @@ prd-sg1n:
 ```mermaid
 ---
 config:
-  theme: neutral
+  look: handDrawn
+  theme: forest
 ---
 flowchart TD
     A[User triggers workflow] --> B[Input Validation<br/>• Required input fields<br/>• User authorization]
@@ -255,6 +256,8 @@ flowchart TD
     E -->|prd-sg1n| G[⚠️ MANUAL APPROVAL<br/>• Email notification<br/>• GitHub UI prompt<br/>• Wait for approval]
     F --> H[Execution Stage<br/>• VM operations<br/>• Configuration<br/>• Verification]
     G --> H
+
+    linkStyle default stroke:#00C853,stroke-width:3px
 ```
 
 ## Ansible Task Workflow Architecture
