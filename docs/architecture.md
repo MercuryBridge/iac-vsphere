@@ -107,28 +107,28 @@ Note: This Github Actions workflow is currently dependent on the SAT Environment
 
 When users trigger workflows through GitHub Actions UI:
 
-```yaml
-workflow_dispatch:
-  inputs:
-    change_request_number: 
-      description: "ServiceNow Change Request ID (e.g., CHG0000001)"
-      required: true
-      default: "CHG0000001"
-    
-    build_site:
-      type: choice
-      description: "Deployment environment/site"
-      required: true
-      default: "sat-sg1n"
-      options:
-        - "sat-sg1n"    # Development/Testing
-        - "prd-sg1n"    # Production
-    
-    target_group:
-      description: "Target host group(s) or VM(s) from Ansible inventory"
-      required: true
-      default: "vm-db,vm-non-db"
-```
+  ```yaml
+  workflow_dispatch:
+    inputs:
+      change_request_number: 
+        description: "ServiceNow Change Request ID (e.g., CHG0000001)"
+        required: true
+        default: "CHG0000001"
+      
+      build_site:
+        type: choice
+        description: "Deployment environment/site"
+        required: true
+        default: "sat-sg1n"
+        options:
+          - "sat-sg1n"    # Development/Testing
+          - "prd-sg1n"    # Production
+      
+      target_group:
+        description: "Target host group(s) or VM(s) from Ansible inventory"
+        required: true
+        default: "vm-db,vm-non-db"
+  ```
 
 ### Concurrency Control
 
@@ -262,36 +262,37 @@ flowchart TD
 
 ## Ansible Task Workflow Architecture
 
-### Infrastructure as Code (IaC) Host Definition
-
-The **Ansible inventory file** (`hosts`) is the single source of truth for VM lifecycle and ownership.
-
-- **Presence in file** : VM is declared to exist (`state: present`).
-- **Absence in file** : VM is not managed / should be removed (`state: absent`).
-- **Owner attribution** : Each VM entry includes `input_vm_service_owner`, ensuring accountability and traceability.
-- This enforces **IaC principles**: infrastructure state, existence, and ownership are explicitly codified in version-controlled inventory files.
-
-### Dynamic Inventory Processing
+### Infrastructure as Code (IaC) VM Definition & Dynamic Inventory Processing
 
 **Inventory Structure**:
-```ini
-# ansible/inventories/sat-sg1n/hosts
-[vm-db]
-sat-sg1n-vm-db-01 vm_deploy_ip=172.16.14.75 input_state_group=present input_vm_service_owner=HendryDing
-sat-sg1n-vm-db-02 vm_deploy_ip=172.16.14.76 input_state_group=present input_vm_service_owner=EuHock
 
-[vm-non-db]  
-sat-sg1n-vm-non-db-01 vm_deploy_ip=172.16.14.77 input_state_group=present input_vm_service_owner=Hien
-sat-sg1n-vm-non-db-02 vm_deploy_ip=172.16.14.78 input_state_group=present input_vm_service_owner=Tony
-```
+| vm_state |        vm_name           | vm_dns_zone |  vm_ip_addr  |  vm_netmask   | vm_gateway  |   vm_portgroup   | vm_owner | vm_groups |               vm_uuid                |
+|:--------:|:------------------------|:-----------:|:-------------:|:-------------:|:-----------:|:----------------:|:---------|:----------|:-------------------------------------|
+|    on    |          ad              | tony.local | 172.16.13.234 | 255.255.255.0 | 172.16.13.1 | NET_172.16.13.0  |  Tony    |   vm_ad   | 421950dd-3407-cf27-f871-ba4d1e6e3a09 |
+|    on    | prd-ansible-vm-db-01     | binh.local | 172.16.14.81  | 255.255.255.0 | 172.16.14.1 | NET_172.16.14.0  |  EuHock  |   vm_db   |                 none                 |
+|    on    | prd-ansible-vm-db-02     | binh.local | 172.16.14.82  | 255.255.255.0 | 172.16.14.1 | NET_172.16.14.0  |  Hien    |   vm_db   |                 none                 |
+|    on    | prd-ansible-vm-non-db-01 | tony.local | 172.16.14.83  | 255.255.255.0 | 172.16.14.1 | NET_172.16.14.0  |  Tony    | vm_non_db |                 none                 |
+|    on    | prd-ansible-vm-non-db-02 | tony.local | 172.16.14.84  | 255.255.255.0 | 172.16.14.1 | NET_172.16.14.0  |  Binh    | vm_non_db |                 none                 |
 
-**Target Group Processing**:
-```bash
-# User input: "vm-db,vm-non-db" 
-# Ansible processes as: hosts: "{{ input_target_group }}"
-# Results in: hosts: "vm-db,vm-non-db"
-# Executes against all VMs in both groups
-```
+The VM inventory is managed entirely through a version-controlled CSV file (`vm_data.csv`), serving as the **authoritative source of truth** for infrastructure state.
+
+Each row defines:
+
+- **vm_state** – Desired lifecycle state (`on`, `off`).
+- **vm_name / vm_dns_zone** – Unique hostname and DNS mapping.
+- **vm_ip_addr, vm_netmask, vm_gateway** – Network configuration, ensuring consistent addressing.
+- **vm_portgroup** – Network segment or VLAN binding.
+- **vm_owner** – Responsible individual for governance and traceability.
+- **vm_groups** – Functional grouping (e.g., `vm_db`, `vm_non_db`) for Ansible role targeting.
+- **vm_uuid** – Immutable VM identifier, aligning configuration with underlying hypervisor or cloud.
+
+This model enforces:
+
+- **Declarative infrastructure** – Every VM’s existence, network, and ownership is explicitly codified.
+- **Consistency** – Networking, grouping, and lifecycle states are standardized and reproducible.
+- **Accountability** – Ownership is tied to each resource.
+- **Automation** – Ansible tasks dynamically reference this inventory for provisioning, configuration, and lifecycle operations.
+
 
 ### Pre-deployment Validation
 
@@ -300,37 +301,37 @@ This stage ensures **critical dependencies** are reachable before any VM operati
 - **HashiCorp Vault check** → Confirms secret manager is online and accessible with a valid token. Prevents failures due to missing credentials.
 - **vCenter connectivity check** → Validates VMware endpoint availability with provided credentials. Ensures the automation can interact with vSphere before proceeding.
 
-```yaml
-tasks:
-  - name: HashiCorp-Vault connectivity check
-    uri:
-      url: "{{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}/v1/sys/health"
-      headers:
-        X-Vault-Token: "{{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}"
-      method: GET
-      timeout: 10
-    register: _vault_health
-    
-  - name: vCenter connectivity check
-    community.vmware.vmware_about_info:
-      hostname: "{{ vsphere_endpoint }}"
-      username: "{{ vsphere_username }}"
-      password: "{{ vsphere_password }}"
-      validate_certs: "{{ vsphere_validate }}"
-    register: _vcenter_info
+  ```yaml
+  tasks:
+    - name: HashiCorp-Vault connectivity check
+      uri:
+        url: "{{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}/v1/sys/health"
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}"
+        method: GET
+        timeout: 10
+      register: _vault_health
+      
+    - name: vCenter connectivity check
+      community.vmware.vmware_about_info:
+        hostname: "{{ vsphere_endpoint }}"
+        username: "{{ vsphere_username }}"
+        password: "{{ vsphere_password }}"
+        validate_certs: "{{ vsphere_validate }}"
+      register: _vcenter_info
 
-```
+  ```
 
 ### VM Operation Workflow
 
-```yaml
-annotation: |
-  Deploy via Ansible Workflow
-    • Timestamp         : 2025-08-28 14:30
-    • ServiceNow ID     : CHG0000001
-    • Initiated By      : duongvanthanh1992
-    • Owner             : Tony
-```
+  ```yaml
+  annotation: |
+    Deploy via Ansible Workflow
+      • Timestamp         : 2025-08-28 14:30
+      • ServiceNow ID     : CHG0000001
+      • Initiated By      : duongvanthanh1992
+      • Owner             : Tony
+  ```
 Each workflow execution embeds an **immutable audit trail** inside vCenter VM annotations:
 
 - **Timestamp** → Exact execution time.
@@ -346,5 +347,3 @@ This provides **end-to-end accountability**:
 - Who owns the resource afterwards
 
 Together with the **IaC inventory definition**, this ensures that VM existence, lifecycle, and ownership are **fully codified, auditable, and reproducible**.
-
-

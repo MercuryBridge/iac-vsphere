@@ -65,7 +65,7 @@ github_workflows:
       - duongvanthanh1992         # Current admin
       - tieubinh03                # ADD: Security team access
 
-  ansible_vsphere_vm_snapshot:
+  ansible_vsphere_vm_auto_scan:
     main_admin_user:
       - duongvanthanh1992         # Current admin
       - minh.database.admin       # ADD: DB admin for snapshot coordination
@@ -83,7 +83,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
       environment: "sat-sg1n"  # Auto-approve
       ```
 
-  - **PRD (`prd-sg1n`)**: Must `be main_admin_user (same as SAT)` and workflow requires **manual approval**. Only users explicitly assigned as approvers can approve and trigger the deployment.
+  - **PRD (`prd-sg1n`)**: **Must be** `main_admin_user (same as SAT)` and workflow requires **manual approval**. Only users explicitly assigned as approvers can approve and trigger the deployment.
     ```yaml
     environment: "prd-sg1n"  # ⚠️ MANUAL APPROVAL REQUIRED
     ``` 
@@ -109,7 +109,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
       pull_request:          # PR validation
       push:                  # Commit validation
       schedule:
-        - cron: "0 8 * * *"  # Daily at 8 AM UTC
+        - cron: "0 8 * * *"  # Daily at 8 AM
 
     jobs:
       scan:
@@ -144,13 +144,13 @@ The workflow uses a custom Ubuntu 24.04-based container with pre-installed tools
 
 **Container Registry**: `ghcr.io/mercurybridge/iac-vsphere`
 
-```dockerfile
-FROM ubuntu:24.04
-# Core dependencies: Docker, Python3, Ansible-core >= 2.11.0
-# VMware tools: pyvmomi >= 7.0, vsphere-automation-sdk
-# Security: HashiCorp Vault (hvac), SSH tools
-# Automation: yamllint, yq, git, rsync
-```
+  ```dockerfile
+  FROM ubuntu:24.04
+  # Core dependencies: Docker, Python3, Ansible-core >= 2.11.0
+  # VMware tools: pyvmomi >= 7.0, vsphere-automation-sdk
+  # Security: HashiCorp Vault (hvac), SSH tools
+  # Automation: yamllint, yq, git, rsync
+  ```
 
 ### Key Dependencies
 
@@ -168,11 +168,3 @@ ansible.posix                    # SSH/system operations
 yamllint >= 1.26.1               # YAML syntax validation
 hvac >= 0.10.5                   # HashiCorp Vault client
 ```
-
-
-
-
-
-
-
-

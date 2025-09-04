@@ -59,7 +59,7 @@
 |----------|-------------------|------------------|
 | **VM + OS Setup** | Terraform (VM) + Separate tool (OS tasks) | Single playbook for end-to-end |
 | **Daily Maintenance** | External cron + scripts | Ansible playbooks with cron module |
-| **Log Rotation** | Manual scripts on each VM | Centralized playbook execution |
+| **Log Rotation** | Manual scripts on VM | Centralized playbook execution |
 | **Disk Cleanup** | SSH + manual scripts | Automated playbook with file module |
 | **Service Monitoring** | External monitoring tools | Built-in service status checking |
 
@@ -85,7 +85,7 @@
 - Smooth integration with **CI/CD pipelines (e.g., GitHub Actions)** without worrying about state files
 
 ### Avoid **Terraform** for the following scenarios:
-
+- Primarily focused on public cloud infrastructure provisioning
 - Teams not fully aligned with **infrastructure-as-code practices**
 - Scenarios where **state management adds unnecessary complexity**
 - **Inside-VM operations** (scripts, services, log handling)
