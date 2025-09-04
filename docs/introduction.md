@@ -1,5 +1,23 @@
 # Introduction
 
+This introduction explains the **enterprise automation framework** for VMware vSphere using **GitHub Actions**, **Ansible**, and **Vault**.  
+It emphasizes **security layers, access control, workflow approvals, compliance validation, and containerized execution**.  
+The design ensures **secure automation at scale** with **auditable workflows and policy enforcement**.
+
+## Table of Contents
+
+<!-- TOC -->
+- [Introduction](#introduction)
+  - [Overview](#overview)
+    - [Access Control & Security Framework](#access-control--security-framework)
+      - [Layer 1: GitHub Repository Access](#layer-1-github-repository-access)
+      - [Layer 2: Workflow-Level Authorization](#layer-2-workflow-level-authorization)
+      - [Layer 3: Branch-Based Restrictions (Policy) & Environment-Based Authorization](#layer-3-branch-based-restrictions-policy--environment-based-authorization)
+      - [Layer 4: Security Validation Pipeline && Pre-commit Security Scanning](#layer-4-security-validation-pipeline--pre-commit-security-scanning)
+    - [Container Build Process](#container-build-process)
+    - [Key Dependencies](#key-dependencies)
+<!-- TOC -->
+
 ## Overview
 
 This repository implements enterprise-grade VMware vSphere automation through GitHub Actions with multi-layered security, approval workflows, and comprehensive audit trails.
@@ -41,6 +59,7 @@ flowchart LR
 ```
 
 ### Access Control & Security Framework
+[⬆ Back to Table of Contents](#table-of-contents)
 
 #### Layer 1: GitHub Repository Access
 
@@ -65,7 +84,7 @@ github_workflows:
       - duongvanthanh1992         # Current admin
       - tieubinh03                # ADD: Security team access
 
-  ansible_vsphere_vm_snapshot:
+  ansible_vsphere_vm_auto_scan:
     main_admin_user:
       - duongvanthanh1992         # Current admin
       - minh.database.admin       # ADD: DB admin for snapshot coordination
@@ -76,6 +95,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
 ---
 
 #### Layer 3: Branch-Based Restrictions (Policy) & Environment-Based Authorization
+[⬆ Back to Table of Contents](#table-of-contents)
 
 - **Main branch**
   - **SAT**: allowed **only** if the actor is in the workflow’s `main_admin_user`.
@@ -83,7 +103,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
       environment: "sat-sg1n"  # Auto-approve
       ```
 
-  - **PRD (`prd-sg1n`)**: Must `be main_admin_user (same as SAT)` and workflow requires **manual approval**. Only users explicitly assigned as approvers can approve and trigger the deployment.
+  - **PRD (`prd-sg1n`)**: **Must be** `main_admin_user (same as SAT)` and workflow requires **manual approval**. Only users explicitly assigned as approvers can approve and trigger the deployment.
     ```yaml
     environment: "prd-sg1n"  # ⚠️ MANUAL APPROVAL REQUIRED
     ``` 
@@ -98,6 +118,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
   - Keep SAT accessible to accelerate CI on all branches.
 
 ### Layer 4: Security Validation Pipeline && Pre-commit Security Scanning
+[⬆ Back to Table of Contents](#table-of-contents)
 
 - Secret Leak Scan (gitleaks):
   - Detects accidental exposure of credentials, keys, or secrets. Runs on commit, PR, manual trigger, and daily schedule.   
@@ -109,7 +130,7 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
       pull_request:          # PR validation
       push:                  # Commit validation
       schedule:
-        - cron: "0 8 * * *"  # Daily at 8 AM UTC
+        - cron: "0 8 * * *"  # Daily at 8 AM
 
     jobs:
       scan:
@@ -139,18 +160,19 @@ Only listed `main_admin_user`s can trigger/approve restricted actions in the cor
     ```
 
 ### Container Build Process
+[⬆ Back to Table of Contents](#table-of-contents)
 
 The workflow uses a custom Ubuntu 24.04-based container with pre-installed tools:
 
 **Container Registry**: `ghcr.io/mercurybridge/iac-vsphere`
 
-```dockerfile
-FROM ubuntu:24.04
-# Core dependencies: Docker, Python3, Ansible-core >= 2.11.0
-# VMware tools: pyvmomi >= 7.0, vsphere-automation-sdk
-# Security: HashiCorp Vault (hvac), SSH tools
-# Automation: yamllint, yq, git, rsync
-```
+  ```dockerfile
+  FROM ubuntu:24.04
+  # Core dependencies: Docker, Python3, Ansible-core >= 2.11.0
+  # VMware tools: pyvmomi >= 7.0, vsphere-automation-sdk
+  # Security: HashiCorp Vault (hvac), SSH tools
+  # Automation: yamllint, yq, git, rsync
+  ```
 
 ### Key Dependencies
 
@@ -169,10 +191,4 @@ yamllint >= 1.26.1               # YAML syntax validation
 hvac >= 0.10.5                   # HashiCorp Vault client
 ```
 
-
-
-
-
-
-
-
+[⬆ Back to Table of Contents](#table-of-contents)
