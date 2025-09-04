@@ -1,29 +1,33 @@
 ---
 
-hv: "community.hashi_vault.hashi_vault"
+hv: community.hashi_vault.hashi_vault
 hv_query_base: >-
   url={{ lookup('env', 'ANSIBLE_HASHI_VAULT_ADDR') }}
   token={{ lookup('env', 'ANSIBLE_HASHI_VAULT_TOKEN') }}
   secret={{ lookup('env', 'ANSIBLE_HASHI_VAULT_PATH_BASE') }}
+vcenter_secret: "{{ lookup(hv, hv_query_base) }}"
 
-vsphere_endpoint: "{{ lookup(hv, hv_query_base).VSPHERE_ENDPOINT }}"
-vsphere_username: "{{ lookup(hv, hv_query_base).VSPHERE_USERNAME }}"
-vsphere_password: "{{ lookup(hv, hv_query_base).VSPHERE_PASSWORD }}"
-vsphere_datacenter: "{{ lookup(hv, hv_query_base).VSPHERE_DATACENTER }}"
-vsphere_cluster: "{{ lookup(hv, hv_query_base).VSPHERE_CLUSTER }}"
-vsphere_datastore: "{{ lookup(hv, hv_query_base).VSPHERE_DATASTORE }}"
-vsphere_portgroup: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP }}"
-vsphere_portgroup_netmask: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP_NETMASK }}"
-vsphere_portgroup_gateway: "{{ lookup(hv, hv_query_base).VSPHERE_PORTGROUP_GATEWAY }}"
-vsphere_template: "{{ lookup(hv, hv_query_base).VSPHERE_TEMPLATE }}"
-
+vsphere_endpoint: "{{ vcenter_secret.VSPHERE_ENDPOINT }}"
+vsphere_username: "{{ vcenter_secret.VSPHERE_USERNAME }}"
+vsphere_password: "{{ vcenter_secret.VSPHERE_PASSWORD }}"
+vsphere_datacenter: "{{ vcenter_secret.VSPHERE_DATACENTER }}"
+vsphere_cluster: "{{ vcenter_secret.VSPHERE_CLUSTER }}"
+vsphere_datastore: "{{ vcenter_secret.VSPHERE_DATASTORE }}"
+vsphere_portgroup: "{{ vcenter_secret.VSPHERE_PORTGROUP }}"
+vsphere_portgroup_netmask: "{{ vcenter_secret.VSPHERE_PORTGROUP_NETMASK }}"
+vsphere_portgroup_gateway: "{{ vcenter_secret.VSPHERE_PORTGROUP_GATEWAY }}"
+vsphere_template: "{{ vcenter_secret.VSPHERE_TEMPLATE }}"
 vsphere_validate: false
-vsphere_folder: "tony-sat-test"
-vsphere_resource_pool: "tony-sat-test"
+vsphere_folder: "tony-ansible-sat-folder"
+vsphere_resource_pool: "tony-ansible-sat-pool"
+
+ad_endpoint: "{{ vcenter_secret.AD_ENDPOINT }}"
+ad_username: "{{ vcenter_secret.AD_USERNAME }}"
+ad_password: "{{ vcenter_secret.AD_PASSWORD }}"
 
 dns_servers:
+  - 172.16.13.234
   - 8.8.8.8
-  - 8.8.4.4
 ntp_servers: []
 syslog_servers: []
 enable_root_login: true

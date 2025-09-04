@@ -1,5 +1,6 @@
-vm_state,vm_name,vm_dns_zone,vm_ip_addr,vm_netmask,vm_gateway,vm_dns1,vm_dns2,vm_owner
-on,sat-sg1n-vm-db-01,tony.local,172.16.14.75,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Tony
-on,sat-sg1n-vm-db-02,tony.local,172.16.14.76,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Eu-Hock
-off,sat-sg1n-vm-non-db-01,tony.local,172.16.14.77,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Binh
-on,sat-sg1n-vm-non-db-02,tony.local,172.16.14.78,255.255.255.0,172.16.14.1,172.16.13.234,172.16.13.234,Hien
+vm_state,vm_name,vm_dns_zone,vm_ip_addr,vm_netmask,vm_gateway,vm_portgroup,vm_owner,vm_groups,vm_uuid
+on,ad,tony.local,172.16.13.234,255.255.255.0,172.16.13.1,NET_172.16.13.0,Tony,vm_ad,421950dd-3407-cf27-f871-ba4d1e6e3a09
+on,prd-ansible-vm-db-01,binh.local,172.16.14.81,255.255.255.0,172.16.14.1,NET_172.16.14.0,EuHock,vm_db,none
+on,prd-ansible-vm-db-02,binh.local,172.16.14.82,255.255.255.0,172.16.14.1,NET_172.16.14.0,EuHock,vm_db,none
+on,prd-ansible-vm-non-db-01,tony.local,172.16.83.77,255.255.255.0,172.16.14.1,NET_172.16.14.0,EuHock,vm_non_db,none
+on,prd-ansible-vm-non-db-02,tony.local,172.16.84.78,255.255.255.0,172.16.14.1,NET_172.16.14.0,EuHock,vm_non_db,none

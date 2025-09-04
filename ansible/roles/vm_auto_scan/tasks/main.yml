@@ -1,12 +1,12 @@
 ---
 
-- import_tasks: dns.yml
+- ansible.builtin.import_tasks: dns.yml
   vars:
-    ansible_user: "..."
-    ansible_password: "..." 
+    ansible_user: "{{ ad_username }}"
+    ansible_password: "{{ ad_password }}"
     ansible_connection: ssh
     ansible_shell_type: cmd
   when: "'vm_ad' in group_names"
-
+  
 - import_tasks: vmware.yml
   delegate_to: localhost
