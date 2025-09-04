@@ -1,6 +1,6 @@
 name: Ansible vSphere Auto VM Scanning
 run-name: >
-  [${{ github.ref_name }}] ${{ inputs.build_site }} Ansible Auto Scan VM
+  [${{ github.ref_name }}] ${{ inputs.build_site }} 🔍 Ansible Auto Scan VM
 
 on:
   # schedule:
