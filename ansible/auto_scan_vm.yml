@@ -6,3 +6,4 @@
     - name: vSphere vCenter Auto Full-VM Scan via Ansible 
       include_role:
         name: vm_auto_scan
+      tags: ansible_auto_scan_vm_check

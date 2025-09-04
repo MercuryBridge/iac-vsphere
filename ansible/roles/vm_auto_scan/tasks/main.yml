@@ -1,5 +1,8 @@
 ---
 
+- import_tasks: check.yml
+  tags: ansible_auto_scan_vm_check
+
 - ansible.builtin.import_tasks: dns.yml
   vars:
     ansible_user: "{{ ad_username }}"

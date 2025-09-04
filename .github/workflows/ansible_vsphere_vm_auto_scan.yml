@@ -1,18 +1,29 @@
 name: Ansible vSphere Auto VM Scanning
 run-name: >
-  [${{ github.ref_name }}] Ansible Auto Scan ${{ env.SCAN_SITE }}
+  [${{ github.ref_name }}] ${{ inputs.build_site }} Ansible Auto Scan VM
 
 on:
+  # schedule:
+  #   - cron: "0 9 * * *"
+
   workflow_dispatch:
-  schedule:
-    - cron: "0 9 * * *"
+    inputs:
+
+      build_site:
+        type: choice
+        description: "Scan Environment/site (e.g., SAT, PRD)."
+        required: true
+        default: "sat-sg1n"
+        options:
+          - "sat-sg1n"
+          - "prd-sg1n"
 
 permissions:
   contents: read
   packages: read
 
 concurrency:
-  group: ${{ github.ref_name }}-ansible-auto-scan-${{ env.SCAN_SITE }}
+  group: ansible-scan-${{ github.ref }}-${{ inputs.build_site }}
   cancel-in-progress: false
 
 defaults:
@@ -21,7 +32,6 @@ defaults:
 
 env:
   ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
-  SCAN_SITE: "sat-sg1n"
 
 jobs:
 
@@ -32,10 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Load env from ${{ env.SCAN_SITE }} location
+      - name: Load env from default location
         run: >-
-          grep -v -e '^\s*#' -e '^\s*$' "build-env/${SCAN_SITE}.env"
-          >> "$GITHUB_ENV"
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
 
     outputs:
       ansible_runner: ${{ env.ANSIBLE_RUNNER }}
@@ -50,9 +60,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Block production on non-main branches
-        if: env.SCAN_SITE == 'prd-sg1n' && github.ref_name != 'main'
+        if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
         run: |
-          TARGET_ENV="${{ env.SCAN_SITE }}"
+          TARGET_ENV="${{ inputs.build_site }}"
           CURRENT_BRANCH="${{ github.ref_name }}"
 
           echo "==========================================="
@@ -69,7 +79,7 @@ jobs:
           CURRENT_USER="${{ github.actor }}"
           CURRENT_BRANCH="${{ github.ref_name }}"
           CONFIG_FILE=".github/workflows_control/user_access.yml"
-          WORKFLOW_NAME="ansible_vsphere_vm_scan"
+          WORKFLOW_NAME="ansible_vsphere_vm_auto_scan"
           AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
 
           if [ "$CURRENT_BRANCH" != "main" ]; then
@@ -98,7 +108,7 @@ jobs:
   validate:
     needs: [pre, access-check]
     runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
-    environment: "${{ env.SCAN_SITE }}-validation"
+    environment: "${{ inputs.build_site }}-validation"
     container:
           image: "${{ needs.pre.outputs.ansible_image }}"
           volumes:
@@ -111,10 +121,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Load env from ${{ env.SCAN_SITE }} location
+      - name: Load env from ${{ inputs.build_site }} location
         run: >-
-          grep -v -e '^\s*#' -e '^\s*$' "build-env/${SCAN_SITE}.env"
-          >> "$GITHUB_ENV"
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
 
       - name: Stage SSH key
         working-directory: ansible/
@@ -122,10 +132,12 @@ jobs:
           cp /secrets/private_ssh_key ./private_ssh_key
           chmod 600 ./private_ssh_key
 
+      # DEBUG
       - name: Print env
         run: |
           printenv
 
+      # DEBUG
       - name: Print ansible version
         working-directory: ansible/
         run: |
@@ -141,5 +153,46 @@ jobs:
         working-directory: ansible/
         run: >-
           ansible-playbook
-          -i inventories/${{ env.SCAN_SITE }}/hosts
-          ansible_auto_scan_vm.yml
+          -i inventories/${{ inputs.build_site }}/hosts.py
+          -e "input_build_site=${{ inputs.build_site }}"
+          auto_scan_vm.yml --tags ansible_auto_scan_vm_check
+
+  apply:
+    needs: [pre, validate]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}-approved"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from ${{ inputs.build_site }} location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Stage SSH key
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+
+      - name: Ansible run
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_run
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts.py
+          -e "input_build_site=${{ inputs.build_site }}"
+          auto_scan_vm.yml

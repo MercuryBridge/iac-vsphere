@@ -9,6 +9,6 @@ github_workflows:
     main_admin_user:
       - duongvanthanh1992
 
-  ansible_vsphere_vm_snapshot:
+  ansible_vsphere_vm_auto_scan:
     main_admin_user:
       - duongvanthanh1992
