@@ -1,13 +1,19 @@
 ---
 
-- name: Read VM data CSV file
+- name: Read VM data in CSV file
   set_fact:
     _csv_content: >-
       {{ lookup('file', inventory_dir ~ '/vm_data.csv') }}
   delegate_to: localhost
   run_once: true
-  
-- name: Parse CSV manually
+
+- name: Get CSV header
+  set_fact:
+    _csv_headers: "{{ (_csv_content.splitlines()[0]).split(',') }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Parse CSV lines
   set_fact:
     _csv_data: >-
       {{ _csv_data | default([]) + [dict(_csv_headers |
@@ -19,16 +25,22 @@
   delegate_to: localhost
   run_once: true
 
-- name: State mapping on localhost
+- name: Define state mapping
   set_fact:
     _state_map:
-      'on': 'poweredon'
-      'off': 'poweredoff' 
+      "on": "poweredon"
+      "powered-on": "poweredon"
+      "poweredon": "poweredon"
+      "off": "poweredoff"
+      "powered-off": "poweredoff"
+      "poweredoff": "poweredoff"
+      'del': 'absent'
       'delete': 'absent'
+      "absent": "absent"
   delegate_to: localhost
   run_once: true
 
-- name: Map VM states on localhost
+- name: Apply state mapping
   set_fact:
     _csv_mapped: >-
       {{ _csv_mapped | default([]) + [item | combine({
@@ -42,15 +54,26 @@
   set_fact:
     _csv_vm_data: "{{ _csv_mapped }}"
   delegate_to: localhost
+  run_once: true
 
-- name: Find current VM data
+- name: Find current VM data (by name only)
   set_fact:
-    _current_vm: "{{ _csv_vm_data | selectattr('vm_name', 'equalto', inventory_hostname) | first | default({}) }}"
+    _current_vm: >-
+      {{ (_csv_vm_data
+          | selectattr('vm_name','equalto', inventory_hostname)
+          | first | default({})
+         ) }}
+  delegate_to: localhost
 
-- debug:
-    var: _current_vm
-    
-- name: Execute VM operation
+- name: Detect UUID presence
+  set_fact:
+    _has_uuid: >-
+      {{ _current_vm is mapping and
+         (_current_vm.vm_uuid is defined) and
+         ((_current_vm.vm_uuid | string | lower) not in ['','none']) }}
+  delegate_to: localhost
+
+- name: Create/Configure VM if no UUID
   community.vmware.vmware_guest:
     hostname: "{{ vsphere_endpoint }}"
     username: "{{ vsphere_username }}" 
@@ -74,5 +97,22 @@
     wait_for_customization: "{{ _current_vm.vmware_state == 'poweredon' }}"
     wait_for_ip_address: "{{ _current_vm.vmware_state == 'poweredon' }}"
     force: "{{ _current_vm.vmware_state in ['absent', 'poweredoff'] }}"
-  when: _current_vm != {}
+  when:
+    - _current_vm != {}
+    - not _has_uuid
+  delegate_to: localhost
+
+- name: Rename VM if UUID exists
+  community.vmware.vmware_guest:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    uuid: "{{ _current_vm.vm_uuid }}"
+    name: "{{ _current_vm.vm_name }}"
+    state: present
+  when:
+    - _current_vm != {}
+    - _has_uuid
+    - _current_vm.vm_name is defined
   delegate_to: localhost
