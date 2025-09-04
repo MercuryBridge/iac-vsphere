@@ -58,11 +58,11 @@
     _current_dns: >-
       {{ _current_dns | default([]) + [{
         'zone': item.split('::')[0],
-        'hostname': item.split('::')[1], 
+        'hostname': item.split('::')[1],
         'ip': item.split('::')[2]
       }] }}
   loop: "{{ _all_zone_records.stdout_lines }}"
-  when: 
+  when:
     - _all_zone_records.stdout_lines | length > 0
     - item | length > 0
     - "'::' in item"
@@ -76,7 +76,7 @@
     _current_dns_hostnames: >-
       {{ _current_dns | map(attribute='hostname') | list }}
 
-- name: Find extra DNS records  
+- name: Find extra DNS records
   set_fact:
     _drift_dns: >-
       {{ _current_dns | rejectattr('hostname', 'in', _csv_hostnames) |
@@ -107,7 +107,7 @@
 - name: Update DNS records with wrong IPs
   ansible.windows.win_shell: |
     $zone = "{{ item.csv.vm_dns_zone }}"
-    $name = "{{ item.csv.vm_name }}"  
+    $name = "{{ item.csv.vm_name }}"
     $newIp = "{{ item.csv.vm_ip_addr }}"
     $oldIp = "{{ item.dns.ip }}"
 
@@ -166,6 +166,6 @@
       DNS Management Summary:
       - Processed zones: {{ _unique_zones | join(', ') }}
       - Created: {{ _missing_dns | length }} DNS records
-      - Updated: {{ _ip_mismatches | length }} DNS records  
+      - Updated: {{ _ip_mismatches | length }} DNS records
       - Removed/Drift: {{ _drift_dns | length }} DNS records
       - Total CSV entries: {{ _csv_data | length }}

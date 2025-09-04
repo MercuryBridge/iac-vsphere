@@ -10,6 +10,6 @@
     ansible_connection: ssh
     ansible_shell_type: cmd
   when: "'vm_ad' in group_names"
-  
+
 - import_tasks: vmware.yml
   delegate_to: localhost

@@ -76,7 +76,7 @@
 - name: Create/Configure VM if no UUID
   community.vmware.vmware_guest:
     hostname: "{{ vsphere_endpoint }}"
-    username: "{{ vsphere_username }}" 
+    username: "{{ vsphere_username }}"
     password: "{{ vsphere_password }}"
     validate_certs: "{{ vsphere_validate }}"
     datacenter: "{{ vsphere_datacenter }}"
