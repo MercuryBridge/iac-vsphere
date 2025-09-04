@@ -1,8 +1,7 @@
 # Introduction
 
-This introduction explains the **enterprise automation framework** for VMware vSphere using **GitHub Actions**, **Ansible**, and **Vault**.  
-It emphasizes **security layers, access control, workflow approvals, compliance validation, and containerized execution**.  
-The design ensures **secure automation at scale** with **auditable workflows and policy enforcement**.
+This framework delivers **secure, scalable automation for VMware vSphere** using **GitHub Actions**, **Ansible**, and **Vault**.  
+It focuses on **layered security, access control, workflow approvals, and compliance checks**, ensuring automation runs in a **controlled, auditable, and containerized environment**.
 
 ## Table of Contents
 
@@ -20,7 +19,8 @@ The design ensures **secure automation at scale** with **auditable workflows and
 
 ## Overview
 
-This repository implements enterprise-grade VMware vSphere automation through GitHub Actions with multi-layered security, approval workflows, and comprehensive audit trails.
+This project provides an **enterprise-grade automation model** that integrates **policy enforcement, audit trails, and workflow governance**.  
+By combining **GitHub Actions orchestration, Ansible playbooks, and Vault-managed secrets**, it standardizes **vSphere operations** with **strict authorization flows** and **end-to-end security validation**.
 
 ```mermaid
 ---
