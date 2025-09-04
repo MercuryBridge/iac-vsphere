@@ -190,5 +190,3 @@ ansible.posix                    # SSH/system operations
 yamllint >= 1.26.1               # YAML syntax validation
 hvac >= 0.10.5                   # HashiCorp Vault client
 ```
-
-[⬆ Back to Table of Contents](#table-of-contents)
