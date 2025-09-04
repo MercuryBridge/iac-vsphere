@@ -42,7 +42,7 @@
     $zones = @("{{ _unique_zones | join('","') }}")
     foreach ($zone in $zones) {
       try {
-        $records = Get-DnsServerResourceRecord -ZoneName $zone `-RRType A -ErrorAction Stop
+        $records = Get-DnsServerResourceRecord -ZoneName $zone -RRType A -ErrorAction Stop
         foreach ($record in $records) {
           $results += "$zone::$($record.HostName)::$($record.RecordData.IPv4Address)"
         }
@@ -70,7 +70,8 @@
 - name: Find missing DNS records
   set_fact:
     _missing_dns: >-
-      {{ _active_list_dns | rejectattr('vm_name', 'in', _current_dns_hostnames) | list }}
+      {{ _active_list_dns | rejectattr('vm_name', 'in', _current_dns_hostnames) |
+      list }}
   vars:
     _current_dns_hostnames: >-
       {{ _current_dns | map(attribute='hostname') | list }}
