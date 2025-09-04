@@ -1,7 +1,7 @@
 # Architecture
 
-This architecture defines an **end-to-end automated workflow** for managing VMware infrastructure using **Ansible**, **HashiCorp Vault**, and **GitHub Actions**.  
-It covers infrastructure provisioning, configuration, secrets management, compliance enforcement, approval flows, and operational auditing.  
+This architecture defines an **end-to-end automated workflow** for managing VMware infrastructure using **Ansible**, **HashiCorp Vault**, and **GitHub Actions**. It covers infrastructure provisioning, configuration, secrets management, compliance enforcement, approval flows, and operational auditing.  
+
 The design ensures **security, accountability, and reproducibility** across environments.
 
 ## Table of Contents
@@ -383,5 +383,3 @@ This provides **end-to-end accountability**:
 - Who owns the resource afterwards
 
 Together with the **IaC inventory definition**, this ensures that VM existence, lifecycle, and ownership are **fully codified, auditable, and reproducible**.
-
-[⬆ Back to Table of Contents](#table-of-contents)
