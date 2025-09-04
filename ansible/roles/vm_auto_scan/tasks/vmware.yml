@@ -115,4 +115,21 @@
     - _current_vm != {}
     - _has_uuid
     - _current_vm.vm_name is defined
+    - _current_vm.vmware_state != 'absent'
+  delegate_to: localhost
+
+- name: Set VM state if UUID exists (follow CSV)
+  community.vmware.vmware_guest:
+    hostname: "{{ vsphere_endpoint }}"
+    username: "{{ vsphere_username }}"
+    password: "{{ vsphere_password }}"
+    validate_certs: "{{ vsphere_validate }}"
+    uuid: "{{ _current_vm.vm_uuid }}"
+    state: "{{ _current_vm.vmware_state }}"
+    force: "{{ _current_vm.vmware_state in ['absent','poweredoff'] }}"
+    wait_for_ip_address: "{{ _current_vm.vmware_state == 'poweredon' }}"
+  when:
+    - _current_vm != {}
+    - _has_uuid
+    - _current_vm.vmware_state is defined
   delegate_to: localhost
