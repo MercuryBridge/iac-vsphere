@@ -125,16 +125,9 @@ Configuration drift occurs when infra changes due to manual/unapproved/unmonitor
 [⬆ Back to Table of Contents](#table-of-contents)
 
 [^1]: Configuration immutability means that the configuration (of an infrastructure or an application) can’t be changed. For example, provisioning the newer version of an app requires the previous version to be eliminated and replaced—rather than modified and updated. Resources are destroyed and recreated automatically.
-
-Terraform uses an immutable infrastructure approach, which can help users get started quickly as they can easily spin up resources, test something, then tear it down. However, depending on the size of the infrastructure, it can become complex and hard to manage. 
-Although Ansible is designed assuming configuration mutability, some automation workflows can be designed to embrace the immutability approach.
+  Terraform uses an immutable infrastructure approach, which can help users get started quickly as they can easily spin up resources, test something, then tear it down. However, depending on the size of the infrastructure, it can become complex and hard to manage. Although Ansible is designed assuming configuration mutability, some automation workflows can be designed to embrace the immutability approach.
 
 [^2]: Configuration mutability means that the configuration (of an infrastructure or an application) can be changed. For example, newer versions of applications can be provisioned by updating or modifying the existing resource instead of eliminating or replacing it.
+  Ansible is designed assuming configuration mutability. The advantage of this approach is that the automation workflows are simple to understand and easy to troubleshoot. However, in certain scenarios, it can be challenging to deprovision resources without knowing the correct order of operations.
 
-Ansible is designed assuming configuration mutability. The advantage of this approach is that the automation workflows are simple to understand and easy to troubleshoot. However, in certain scenarios, it can be challenging to deprovision resources without knowing the correct order of operations. [⬆ Back to Table of Contents](#table-of-contents)
-
-[^3]: Configuration drift occurs when an infrastructure changes due to manual, unapproved, or unmonitored changes over time—and those changes are not recorded or tracked systematically.
-
-Often, these changes are due to emergencies or excessive complexity, factors that can discourage employees from following the established process. As a result, configuration drift is frequent in large organizations.
-
-[⬆ Back to Table of Contents](#table-of-contents)
+[^3]: Configuration drift occurs when an infrastructure changes due to manual, unapproved, or unmonitored changes over time—and those changes are not recorded or tracked systematically. Often, these changes are due to emergencies or excessive complexity, factors that can discourage employees from following the established process. As a result, configuration drift is frequent in large organizations.
