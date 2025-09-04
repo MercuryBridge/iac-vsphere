@@ -6,6 +6,11 @@
       {{ lookup('file', inventory_dir ~ '/vm_data.csv') }}
   delegate_to: localhost
 
+- name: Get CSV header
+  set_fact:
+    _csv_headers: "{{ (_csv_content.splitlines()[0]).split(',') }}"
+  delegate_to: localhost
+
 - name: Parse CSV manually
   set_fact:
     _csv_data: >-
@@ -17,17 +22,19 @@
   when: line | trim | length > 0
   delegate_to: localhost
 
-- name: Filter by vm_state
+- name: Split VMs by state
   set_fact:
-    _active_vms: >-
-      {{ _csv_data | selectattr('vm_state', 'ne', 'delete') | list }}
+    _active_list_dns: >-
+      {{ _csv_data | rejectattr('vm_state', 'in', ['delete','del']) | list }}
     _delete_vms: >-
-      {{ _csv_data | selectattr('vm_state', 'equalto', 'delete') | list }}
+      {{ _csv_data | selectattr('vm_state', 'in', ['delete','del']) | list }}
+  delegate_to: localhost
 
-- name: Get unique zones from CSV
+- name: Get zones
   set_fact:
     _unique_zones: >-
       {{ _csv_data | map(attribute='vm_dns_zone') | unique | list }}
+  delegate_to: localhost
 
 - name: Get ALL A records for all zones
   ansible.windows.win_shell: |
@@ -35,7 +42,7 @@
     $zones = @("{{ _unique_zones | join('","') }}")
     foreach ($zone in $zones) {
       try {
-        $records = Get-DnsServerResourceRecord -ZoneName $zone -RRType A -ErrorAction Stop
+        $records = Get-DnsServerResourceRecord -ZoneName $zone `-RRType A -ErrorAction Stop
         foreach ($record in $records) {
           $results += "$zone::$($record.HostName)::$($record.RecordData.IPv4Address)"
         }
@@ -63,20 +70,19 @@
 - name: Find missing DNS records
   set_fact:
     _missing_dns: >-
-      {{ _active_vms | rejectattr('vm_name', 'in', _current_dns_hostnames) |
-      list }}
+      {{ _active_list_dns | rejectattr('vm_name', 'in', _current_dns_hostnames) | list }}
   vars:
     _current_dns_hostnames: >-
       {{ _current_dns | map(attribute='hostname') | list }}
 
 - name: Find extra DNS records  
   set_fact:
-    _extra_dns: >-
+    _drift_dns: >-
       {{ _current_dns | rejectattr('hostname', 'in', _csv_hostnames) |
       rejectattr('hostname', 'in', _skip_dns_records) | list }}
   vars:
     _csv_hostnames: >-
-      {{ _active_vms | map(attribute='vm_name') | list }}
+      {{ _active_list_dns | map(attribute='vm_name') | list }}
 
 - name: Initialize IP mismatches
   set_fact:
@@ -86,7 +92,7 @@
   set_fact:
     _ip_mismatches: >-
       {{ _ip_mismatches | default([]) + [{'csv': _csv_vm, 'dns': _dns_vm}] }}
-  loop: "{{ _active_vms }}"
+  loop: "{{ _active_list_dns }}"
   loop_control:
     loop_var: _csv_vm
   vars:
@@ -96,16 +102,6 @@
   when:
     - _dns_vm.ip is defined
     - _dns_vm.ip != _csv_vm.vm_ip_addr
-
-- name: Create missing DNS A records
-  ansible.windows.win_shell: |
-    Add-DnsServerResourceRecordA `
-      -ZoneName "{{ item.vm_dns_zone }}" `
-      -Name "{{ item.vm_name }}" `
-      -IPv4Address "{{ item.vm_ip_addr }}" `
-      -CreatePtr
-  loop: "{{ _missing_dns }}"
-  when: _missing_dns | length > 0
 
 - name: Update DNS records with wrong IPs
   ansible.windows.win_shell: |
@@ -132,7 +128,7 @@
   loop: "{{ _ip_mismatches }}"
   when: _ip_mismatches | length > 0
 
-- name: Remove extra DNS records
+- name: Remove DNS records marked as delete/drift
   ansible.windows.win_shell: |
     $zone = "{{ item.zone }}"
     $name = "{{ item.hostname }}"
@@ -150,48 +146,25 @@
         -ZoneName $oldRev -Name $oldPtrNm -RRType PTR `
         -Force -ErrorAction SilentlyContinue
     }
-  loop: "{{ _extra_dns }}"
-  when: _extra_dns | length > 0
+  loop: "{{ _drift_dns }}"
+  when: _drift_dns | length > 0
 
-- name: Remove DNS records for deleted VMs
+- name: Create missing DNS A records
   ansible.windows.win_shell: |
-    $ErrorActionPreference = "Continue"
-    $zone = "{{ item.vm_dns_zone }}"
-    $name = "{{ item.vm_name }}"
-
-    try {
-      $record = Get-DnsServerResourceRecord -ZoneName $zone -Name $name -RRType A -ErrorAction SilentlyContinue
-      if ($record) {
-        $oldIp = $record.RecordData.IPv4Address.ToString()
-        Write-Host "Found record: $name -> $oldIp in $zone"
-
-        Remove-DnsServerResourceRecord -ZoneName $zone -Name $name -RRType A -Force -ErrorAction SilentlyContinue
-        Write-Host "Removed A record: $name from $zone"
-
-        $o = $oldIp.Split('.')
-        if ($o.Count -eq 4) {
-          $oldRev = "$($o[2]).$($o[1]).$($o[0]).in-addr.arpa"
-          $oldPtrNm = $o[3]
-          Remove-DnsServerResourceRecord -ZoneName $oldRev -Name $oldPtrNm -RRType PTR -Force -ErrorAction SilentlyContinue
-          Write-Host "Removed PTR record: $oldPtrNm from $oldRev"
-        }
-      } else {
-        Write-Host "No record found for $name in $zone"
-      }
-    } catch {
-      Write-Host "Error processing $name in $zone`: $($_.Exception.Message)"
-    }
-  loop: "{{ _delete_vms }}"
-  when: _delete_vms | length > 0
+    Add-DnsServerResourceRecordA `
+      -ZoneName "{{ item.vm_dns_zone }}" `
+      -Name "{{ item.vm_name }}" `
+      -IPv4Address "{{ item.vm_ip_addr }}" `
+      -CreatePtr
+  loop: "{{ _missing_dns }}"
+  when: _missing_dns | length > 0
 
 - name: Final DNS report
   debug:
     msg: |-
       DNS Management Summary:
       - Processed zones: {{ _unique_zones | join(', ') }}
-      - Created: {{ _missing_dns | length }} records
-      - Updated: {{ _ip_mismatches | length }} records  
-      - Deleted: {{ _delete_vms | length }} records
-      - Removed extra: {{ _extra_dns | length }} records
+      - Created: {{ _missing_dns | length }} DNS records
+      - Updated: {{ _ip_mismatches | length }} DNS records  
+      - Removed/Drift: {{ _drift_dns | length }} DNS records
       - Total CSV entries: {{ _csv_data | length }}
-      - Total DNS entries: {{ _current_dns | length }}

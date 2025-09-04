@@ -1,15 +1,12 @@
 ---
 
-- ansible.builtin.import_tasks: dns.yml
+- import_tasks: dns.yml
   vars:
     ansible_user: "..."
     ansible_password: "..." 
     ansible_connection: ssh
     ansible_shell_type: cmd
-    _csv_headers: ['vm_state', 'vm_name', 'vm_dns_zone', 'vm_ip_addr']
+  when: "'vm_ad' in group_names"
 
-- ansible.builtin.import_tasks: scan.yml
-  vars:
-    _csv_headers: ['vm_state', 'vm_name', 'vm_dns_zone', 'vm_ip_addr',
-      'vm_netmask', 'vm_gateway', 'vm_portgroup','vm_owner']
+- import_tasks: vmware.yml
   delegate_to: localhost
