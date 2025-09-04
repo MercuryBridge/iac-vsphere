@@ -1,4 +1,32 @@
-# Architecture 
+# Architecture
+
+This architecture defines an **end-to-end automated workflow** for managing VMware infrastructure using **Ansible**, **HashiCorp Vault**, and **GitHub Actions**.  
+It covers infrastructure provisioning, configuration, secrets management, compliance enforcement, approval flows, and operational auditing.  
+The design ensures **security, accountability, and reproducibility** across environments.
+
+## Table of Contents
+
+<!-- TOC -->
+- [Architecture](#architecture)
+  - [Topology](#topology)
+  - [Requirements](#requirements)
+  - [Configuration](#configuration)
+  - [Workflow Execution Deep Dive](#workflow-execution-deep-dive)
+    - [Compliance Controls](#compliance-controls)
+    - [Input Parameter Processing](#input-parameter-processing)
+    - [Concurrency Control](#concurrency-control)
+    - [Environment Variable Loading](#environment-variable-loading)
+  - [Secrets & Vault Integration Architecture](#secrets--vault-integration-architecture)
+    - [GitHub Secrets Configuration](#github-secrets-configuration)
+    - [Vault Integration Flow](#vault-integration-flow)
+  - [Approval Workflow Deep Dive](#approval-workflow-deep-dive)
+    - [Environment Protection Rules](#environment-protection-rules)
+    - [Approval Process Flow](#approval-process-flow)
+  - [Ansible Task Workflow Architecture](#ansible-task-workflow-architecture)
+    - [Infrastructure as Code (IaC) VM Definition & Dynamic Inventory Processing](#infrastructure-as-code-iac-vm-definition--dynamic-inventory-processing)
+    - [Pre-deployment Validation](#pre-deployment-validation)
+    - [VM Operation Workflow](#vm-operation-workflow)
+<!-- TOC -->
 
 ## Topology
 
@@ -16,6 +44,7 @@
 ```note
 Note: This Github Actions workflow is currently dependent on the SAT Environment
 ```
+
 ## Configuration
 
 <details>
@@ -92,6 +121,7 @@ Note: This Github Actions workflow is currently dependent on the SAT Environment
 </details>
 
 ## Workflow Execution Deep Dive
+[⬆ Back to Table of Contents](#table-of-contents)
 
 ### Compliance Controls
 
@@ -131,6 +161,7 @@ When users trigger workflows through GitHub Actions UI:
   ```
 
 ### Concurrency Control
+[⬆ Back to Table of Contents](#table-of-contents)
 
 - Groups workflow runs under a unique key, so only one run per group is active at a time.
 
@@ -161,6 +192,7 @@ ANSIBLE_IMAGE=ghcr.io/mercurybridge/iac-vsphere:sat-sg1n-latest
 ```
 
 ## Secrets & Vault Integration Architecture
+[⬆ Back to Table of Contents](#table-of-contents)
 
 ### GitHub Secrets Configuration
 
@@ -220,6 +252,7 @@ secrets:
 ```
 
 ## Approval Workflow Deep Dive
+[⬆ Back to Table of Contents](#table-of-contents)
 
 ### Environment Protection Rules
 
@@ -261,6 +294,7 @@ flowchart TD
 ```
 
 ## Ansible Task Workflow Architecture
+[⬆ Back to Table of Contents](#table-of-contents)
 
 ### Infrastructure as Code (IaC) VM Definition & Dynamic Inventory Processing
 
@@ -295,6 +329,7 @@ This model enforces:
 
 
 ### Pre-deployment Validation
+[⬆ Back to Table of Contents](#table-of-contents)
 
 This stage ensures **critical dependencies** are reachable before any VM operations:
 
@@ -323,6 +358,7 @@ This stage ensures **critical dependencies** are reachable before any VM operati
   ```
 
 ### VM Operation Workflow
+[⬆ Back to Table of Contents](#table-of-contents)
 
   ```yaml
   annotation: |
@@ -347,3 +383,5 @@ This provides **end-to-end accountability**:
 - Who owns the resource afterwards
 
 Together with the **IaC inventory definition**, this ensures that VM existence, lifecycle, and ownership are **fully codified, auditable, and reproducible**.
+
+[⬆ Back to Table of Contents](#table-of-contents)
