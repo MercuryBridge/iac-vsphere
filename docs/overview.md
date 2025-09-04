@@ -37,11 +37,11 @@ Both Ansible and Terraform are IaC tools, though, the programming used by each s
 | **Create VM** | Single `terraform apply` command | Single `ansible-playbook` execution |
 | **Delete VM** | Single `terraform destroy` command | Separate cleanup playbook required |
 | **Modify VM Resources** | Edit config + apply (Hot Plug: CPU/RAM/Disk up while running, CPU/RAM down requires power off, Disk cannot be reduced due to VMware limitations) | Separate playbook for each modification type + state checking tasks  |
-| **Rename VM** | ⚠️ Destroy + recreate with new name [^1]. | Configuration mutability - Custom playbook with UUID checking (otherwise creates new VM instead of renaming) [^2].|
+| **Rename VM** | ⚠️  [^1] Destroy + recreate with new name. |  [^2] Configuration mutability - Custom playbook with UUID checking (otherwise creates new VM instead of renaming).|
 
 ### Infrastructure Drift Management 
 
-Configuration drift occurs when infra changes due to manual/unapproved/unmonitored actions[^3].
+Configuration drift occurs when infra changes due to manual/unapproved/unmonitored actions [^3].
 
 | Scenario | Terraform | Ansible |
 |----------|-----------|---------|
