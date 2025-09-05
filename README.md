@@ -2,6 +2,7 @@
 [![Gitleaks Scan](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/gitleaks.yml/badge.svg?branch=main&event=schedule)](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/gitleaks.yml)
 [![Ansible YAML Lint](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/yamllint.yml/badge.svg?branch=main)](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/yamllint.yml)
 [![Build and Publish Documents](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/build_docs.yml/badge.svg?branch=main)](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/build_docs.yml)
+[![Ansible vSphere Auto VM Scanning](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/ansible_vsphere_vm_auto_scan.yml/badge.svg?branch=main)](https://github.com/MercuryBridge/iac-vsphere/actions/workflows/ansible_vsphere_vm_auto_scan.yml)
 
 - GitOps-driven VM provisioning and management for vSphere environments via GitHub Actions.
 
