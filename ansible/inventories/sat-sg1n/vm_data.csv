@@ -3,4 +3,4 @@ on,ad,tony.local,172.16.13.234,255.255.255.0,172.16.13.1,NET_172.16.13.0,Tony,vm
 on,sat-ansible-vm-db-01,tony.local,172.16.14.75,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_db,none
 on,sat-ansible-vm-db-02,tony.local,172.16.14.76,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_db,none
 on,sat-ansible-vm-non-db-01,binh.local,172.16.14.77,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_non_db,none
-on,sat-ansible-vm-non-db-02,binh.local,172.16.14.78,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_non_db,none
+off,sat-ansible-vm-non-db-02,binh.local,172.16.14.78,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_non_db,none
