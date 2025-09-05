@@ -9,10 +9,11 @@ on:
 
       build_site:
         type: choice
-        description: "Environments for deployment. Used for Github Action.(e.g. SAT, PRD...)"
+        description: "Environments for deployment. Used for Github Action.(e.g. DEV, SAT, PRD...)"
         required: true
-        default: "sat-sg1n"
+        default: "dev-sg1n"
         options:
+          - "dev-sg1n"
           - "sat-sg1n"
           - "prd-sg1n"
 

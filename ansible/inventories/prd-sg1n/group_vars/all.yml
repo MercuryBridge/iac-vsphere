@@ -30,4 +30,3 @@ dns_servers:
   - 8.8.8.8
 ntp_servers: []
 syslog_servers: []
-enable_root_login: true

@@ -18,8 +18,8 @@ vsphere_portgroup_netmask: "{{ vcenter_secret.VSPHERE_PORTGROUP_NETMASK }}"
 vsphere_portgroup_gateway: "{{ vcenter_secret.VSPHERE_PORTGROUP_GATEWAY }}"
 vsphere_template: "{{ vcenter_secret.VSPHERE_TEMPLATE }}"
 vsphere_validate: false
-vsphere_folder: "tony-ansible-sat-folder"
-vsphere_resource_pool: "tony-ansible-sat-pool"
+vsphere_folder: "tony-ansible-dev-folder"
+vsphere_resource_pool: "tony-ansible-dev-pool"
 
 ad_endpoint: "{{ vcenter_secret.AD_ENDPOINT }}"
 ad_username: "{{ vcenter_secret.AD_USERNAME }}"

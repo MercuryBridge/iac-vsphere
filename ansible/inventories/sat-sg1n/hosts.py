@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CSV → Ansible dynamic inventory (SOLID principles)
+CSV → Ansible dynamic inventory
 """
 
 import os

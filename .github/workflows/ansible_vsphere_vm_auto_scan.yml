@@ -4,17 +4,18 @@ run-name: >
 
 on:
   # schedule:
-  #   - cron: "0 9 * * *"
+  #   - cron: "0 2 * * *"   # UTC
 
   workflow_dispatch:
     inputs:
 
       build_site:
         type: choice
-        description: "Scan Environment/site (e.g., SAT, PRD)."
+        description: "Scan Environment/site (e.g.,  DEV, SAT, PRD)."
         required: true
-        default: "sat-sg1n"
+        default: "dev-sg1n"
         options:
+          - "dev-sg1n"
           - "sat-sg1n"
           - "prd-sg1n"
 
@@ -60,7 +61,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Block production on non-main branches
-        if: inputs.build_site == 'prd-sg1n' && github.ref_name != 'main'
+        if: ${{ contains(fromJSON('["prd-sg1n","sat-sg1n"]'), inputs.build_site) && github.ref_name != 'main' }}
         run: |
           TARGET_ENV="${{ inputs.build_site }}"
           CURRENT_BRANCH="${{ github.ref_name }}"
@@ -70,7 +71,7 @@ jobs:
           echo "-------------------------------------------"
           echo " Branch : $CURRENT_BRANCH"
           echo " Env    : $TARGET_ENV"
-          echo " Reason : Only 'main' branch can deploy prod"
+          echo " Reason : Only 'main' branch can deploy to 'sat-sg1n' and 'prd-sg1n'"
           echo "==========================================="
           exit 1
 

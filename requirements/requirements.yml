@@ -2,8 +2,6 @@
 roles:
   - name: robertdebock.rsyslog
     version: 2.4.2
-  - name: riemers.gitlab-runner
-    version: v1.6.20
   - name: geerlingguy.mysql
     version: 3.3.2
   - name: evrardjp.keepalived
@@ -14,6 +12,7 @@ roles:
 collections:
   - name: amazon.aws
   - name: ansible.posix
+  - name: ansible.windows
   - name: ansible.netcommon
   - name: ansible.utils
   - name: community.general

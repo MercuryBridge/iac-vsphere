@@ -122,7 +122,6 @@ Configuration drift occurs when infra changes due to manual/unapproved/unmonitor
 - [Interacting with Vault from Terraform causes any secrets that you read and write to be persisted in both Terraform's state file and in any generated plan files. For any Terraform module that reads or writes Vault secrets, these files should be treated as sensitive and protected accordingly.](https://registry.terraform.io/providers/hashicorp/vault/latest/docs)
 
 ## Glossary
-[⬆ Back to Table of Contents](#table-of-contents)
 
 [^1]: Configuration immutability means that the configuration (of an infrastructure or an application) can’t be changed. For example, provisioning the newer version of an app requires the previous version to be eliminated and replaced—rather than modified and updated. Resources are destroyed and recreated automatically.
   Terraform uses an immutable infrastructure approach, which can help users get started quickly as they can easily spin up resources, test something, then tear it down. However, depending on the size of the infrastructure, it can become complex and hard to manage. Although Ansible is designed assuming configuration mutability, some automation workflows can be designed to embrace the immutability approach.

@@ -14,6 +14,11 @@ RUN apt-get update && \
     apt-get update; \
     apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+RUN apt-get update && \
+    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq && \
+    chmod +x /usr/local/bin/yq && \
+    yq --version
+
 COPY requirements/requirements.apt .
 RUN apt-get update && \
     sed 's/#.*//' requirements.apt | xargs apt-get install -y && \
@@ -26,8 +31,3 @@ RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt && \
 COPY requirements/requirements.yml .
 RUN ansible-galaxy collection install -v -r requirements.yml && \
     ansible-galaxy role install -v -r requirements.yml --ignore-errors
-
-RUN apt-get update && \
-    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq && \
-    chmod +x /usr/local/bin/yq && \
-    yq --version
