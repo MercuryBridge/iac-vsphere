@@ -3,4 +3,4 @@
 # Any change in these paths will automatically request review
 # from the listed GitHub usernames or teams.
 # Assign ownership of all files under .github/
-/.github/*    @duongvanthanh1992
+.github/    @duongvanthanh1992
