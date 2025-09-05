@@ -1,14 +1,14 @@
 ---
 
 github_workflows:
-  ansible_vsphere_vm_provision:
-    main_admin_user:
-      - duongvanthanh1992
-
-  ansible_vsphere_vm_scan:
-    main_admin_user:
-      - duongvanthanh1992
-
   ansible_vsphere_vm_auto_scan:
+    main_admin_user:
+      - duongvanthanh1992
+
+  ansible_vsphere_vm_operation:
+    main_admin_user:
+      - duongvanthanh1992
+
+  ansible_vsphere_vm_provision:
     main_admin_user:
       - duongvanthanh1992

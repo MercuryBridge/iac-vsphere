@@ -1,6 +1,6 @@
 vm_state,vm_name,vm_dns_zone,vm_ip_addr,vm_netmask,vm_gateway,vm_portgroup,vm_owner,vm_groups,vm_uuid
 on,ad,tony.local,172.16.13.234,255.255.255.0,172.16.13.1,NET_172.16.13.0,Tony,vm_ad,421950dd-3407-cf27-f871-ba4d1e6e3a09
-on,sat-ansible-vm-db-01,tony.local,172.16.14.75,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_db,none
-on,sat-ansible-vm-db-02,tony.local,172.16.14.76,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_db,none
-on,sat-ansible-vm-non-db-01,binh.local,172.16.14.77,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_non_db,none
-off,sat-ansible-vm-non-db-02,binh.local,172.16.14.78,255.255.255.0,172.16.14.1,NET_172.16.14.0,Hien,vm_non_db,none
+on,dev-ansible-vm-db-01,binh.local,172.16.14.85,255.255.255.0,172.16.14.1,NET_172.16.14.0,Tony,vm_db,none
+on,dev-ansible-vm-db-02,binh.local,172.16.14.86,255.255.255.0,172.16.14.1,NET_172.16.14.0,Tony,vm_db,none
+on,dev-ansible-vm-non-db-01,binh.local,172.16.14.87,255.255.255.0,172.16.14.1,NET_172.16.14.0,Tony,vm_non_db,none
+on,dev-ansible-vm-non-db-02,binh.local,172.16.14.88,255.255.255.0,172.16.14.1,NET_172.16.14.0,Tony,vm_non_db,none

@@ -1,0 +1,227 @@
+name: Ansible vSphere Operation
+run-name: >
+  [${{ github.ref_name }}] ${{ inputs.build_site }} Ansible Test Operation
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_site:
+        type: choice
+        description: "Scan Environment/site (e.g.,  DEV, SAT, PRD)."
+        required: true
+        default: "dev-sg1n"
+        options:
+          - "dev-sg1n"
+          - "sat-sg1n"
+          - "prd-sg1n"
+
+      change_request_number: 
+        description: "ServiceNow Change Request ID (e.g., CHG0000001).
+          Mandatory for tracking."
+        required: true
+        default: "CHG0000001"
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ansible-scan-${{ github.ref }}-${{ inputs.build_site }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+env:
+  ANSIBLE_COLLECTIONS_PATH: /root/.ansible/collections:/usr/share/ansible/collections
+
+jobs:
+
+  pre:
+    runs-on: [self-hosted]
+    container:
+      image: ubuntu:20.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Load env from default location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+    outputs:
+      ansible_runner: ${{ env.ANSIBLE_RUNNER }}
+      ansible_image: ${{ env.ANSIBLE_IMAGE }}
+
+  access-check:
+    needs: [pre]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Block production on non-main branches
+        if: ${{ contains(fromJSON('["prd-sg1n","sat-sg1n"]'), inputs.build_site) && github.ref_name != 'main' }}
+        run: |
+          TARGET_ENV="${{ inputs.build_site }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+
+          echo "==========================================="
+          echo "Production deployment blocked"
+          echo "-------------------------------------------"
+          echo " Branch : $CURRENT_BRANCH"
+          echo " Env    : $TARGET_ENV"
+          echo " Reason : Only 'main' branch can deploy to 'sat-sg1n' and 'prd-sg1n'"
+          echo "==========================================="
+          exit 1
+
+      - name: Check workflow access (main branch only)
+        run: |
+          CURRENT_USER="${{ github.actor }}"
+          CURRENT_BRANCH="${{ github.ref_name }}"
+          CONFIG_FILE=".github/workflows_control/user_access.yml"
+          WORKFLOW_NAME="ansible_vsphere_vm_auto_scan"
+          AUTHORIZED_USERS="$(yq eval ".github_workflows.\"${WORKFLOW_NAME}\".main_admin_user[]" "$CONFIG_FILE" 2>/dev/null || true)"
+
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "Non-main branch: auth bypassed (prod already blocked)"
+            exit 0
+          fi
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Config file not found: $CONFIG_FILE"
+            exit 1
+          fi
+
+          if [ -z "$AUTHORIZED_USERS" ]; then
+            echo "No main_admin_user configured for workflow: $WORKFLOW_NAME"
+            exit 1
+          fi
+
+          if ! printf '%s\n' "$AUTHORIZED_USERS" | grep -qx -- "$CURRENT_USER"; then
+            echo "User '$CURRENT_USER' not authorized on main"
+            echo "Allowed: $(echo "$AUTHORIZED_USERS" | tr '\n' ' ')"
+            exit 1
+          fi
+
+          echo "'$CURRENT_USER' authorized for this workflow on main"
+
+  validate:
+    needs: [pre, access-check]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from ${{ inputs.build_site }} location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Stage SSH key
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+          chmod +x inventories/${{ inputs.build_site }}/hosts.py
+
+      # DEBUG
+      - name: Print env
+        run: |
+          printenv
+
+      # DEBUG
+      - name: Print ansible version
+        working-directory: ansible/
+        run: |
+          ansible-playbook --version
+          ansible-galaxy collection list || true
+
+      - name: Ansible check
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_check
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts.py
+          -e "input_build_site=${{ inputs.build_site }}"
+          auto_scan_vm.yml --tags ansible_auto_scan_vm_check
+
+  review:
+    needs: [pre, validate]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      issues: write
+
+    steps:
+      - name: Request Workflow Approval
+        uses: trstringer/manual-approval@v1.9.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ github.actor }}
+          issue-title: "[${{ github.ref_name }}] ${{ inputs.build_site }} Ansible Test Operation"
+          issue-body: "Please review `step: validate` result and approve deployment."
+
+  apply:
+    needs: [pre, review]
+    runs-on: [self-hosted, "${{ needs.pre.outputs.ansible_runner }}"]
+    environment: "${{ inputs.build_site }}"
+    container:
+          image: "${{ needs.pre.outputs.ansible_image }}"
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /opt/ssh_key/private_ssh_key:/secrets/private_ssh_key:ro
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Load env from ${{ inputs.build_site }} location
+        run: >-
+          grep -v -e '^\s*#' -e '^\s*$' "build-env/${{ inputs.build_site }}.env"
+          >> $GITHUB_ENV
+
+      - name: Stage SSH key
+        working-directory: ansible/
+        run: |
+          cp /secrets/private_ssh_key ./private_ssh_key
+          chmod 600 ./private_ssh_key
+          chmod +x inventories/${{ inputs.build_site }}/hosts.py
+
+      - name: Ansible run
+        env:
+          ANSIBLE_HASHI_VAULT_ADDR: ${{ secrets.ANSIBLE_HASHI_VAULT_ADDR }}
+          ANSIBLE_HASHI_VAULT_TOKEN: ${{ secrets.ANSIBLE_HASHI_VAULT_TOKEN }}
+          ANSIBLE_HASHI_VAULT_PATH_BASE: ${{ secrets.ANSIBLE_HASHI_VAULT_PATH_BASE }}
+        id: ansible_run
+        working-directory: ansible/
+        run: >-
+          ansible-playbook
+          -i inventories/${{ inputs.build_site }}/hosts.py
+          -e "input_build_site=${{ inputs.build_site }}"
+          auto_scan_vm.yml
